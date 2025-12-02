@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Table, Button, Space, Tag, Popconfirm, Switch, message, Select, Input, Dropdown, Divider, Spin } from 'antd'
+import { Card, Table, Button, Space, Tag, Popconfirm, Switch, message, Select, Dropdown, Divider, Spin } from 'antd'
 import { PlusOutlined, DeleteOutlined, BarChartOutlined, UnorderedListOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import { apiService } from '../services/api'
 import { useAccountStore } from '../store/accountStore'
-import type { CopyTrading, Account, Leader, CopyTradingTemplate, CopyTradingStatistics } from '../types'
+import type { CopyTrading, Leader, CopyTradingTemplate, CopyTradingStatistics } from '../types'
 import { useMediaQuery } from 'react-responsive'
 import { formatUSDC } from '../utils'
 

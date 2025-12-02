@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
-import { Card, Table, Button, Tag, Select, Input, message, Space, Divider, Spin } from 'antd'
+import { Card, Table, Button, Tag, Select, Input, message, Divider, Spin } from 'antd'
 import { LeftOutlined } from '@ant-design/icons'
 import { apiService } from '../services/api'
 import { formatUSDC } from '../utils'

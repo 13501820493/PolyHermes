@@ -4,7 +4,7 @@ import { Card, Form, Button, Select, Switch, message, Typography, Space } from '
 import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons'
 import { apiService } from '../services/api'
 import { useAccountStore } from '../store/accountStore'
-import type { Account, Leader, CopyTradingTemplate } from '../types'
+import type { Leader, CopyTradingTemplate } from '../types'
 import { useMediaQuery } from 'react-responsive'
 import { formatUSDC } from '../utils'
 
@@ -13,7 +13,7 @@ const { Option } = Select
 
 const CopyTradingAdd: React.FC = () => {
   const navigate = useNavigate()
-  const isMobile = useMediaQuery({ maxWidth: 768 })
+  useMediaQuery({ maxWidth: 768 }) // 用于响应式布局，但当前页面未使用
   const { accounts, fetchAccounts } = useAccountStore()
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)

@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Table, Button, Space, Tag, Popconfirm, message, Input, Modal, Form, Radio, InputNumber, Switch, Row, Col, Divider, Spin } from 'antd'
+import { Card, Table, Button, Space, Tag, Popconfirm, message, Input, Modal, Form, Radio, InputNumber, Switch, Divider, Spin } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons'
 import { apiService } from '../services/api'
 import type { CopyTradingTemplate } from '../types'
@@ -19,7 +19,7 @@ const TemplateList: React.FC = () => {
   const [copyForm] = Form.useForm()
   const [copyLoading, setCopyLoading] = useState(false)
   const [copyMode, setCopyMode] = useState<'RATIO' | 'FIXED'>('RATIO')
-  const [sourceTemplate, setSourceTemplate] = useState<CopyTradingTemplate | null>(null)
+  const [setSourceTemplate] = useState<CopyTradingTemplate | null>(null) // 用于跟踪复制的源模板
   
   useEffect(() => {
     fetchTemplates()

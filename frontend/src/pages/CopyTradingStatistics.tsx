@@ -10,7 +10,7 @@ import type { CopyTradingStatistics } from '../types'
 const CopyTradingStatisticsPage: React.FC = () => {
   const { copyTradingId } = useParams<{ copyTradingId: string }>()
   const navigate = useNavigate()
-  const isMobile = useMediaQuery({ maxWidth: 768 })
+  useMediaQuery({ maxWidth: 768 }) // 用于响应式布局，但当前页面未使用
   const [loading, setLoading] = useState(false)
   const [statistics, setStatistics] = useState<CopyTradingStatistics | null>(null)
   

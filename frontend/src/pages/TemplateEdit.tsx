@@ -11,7 +11,7 @@ const { Title } = Typography
 const TemplateEdit: React.FC = () => {
   const navigate = useNavigate()
   const { id } = useParams<{ id: string }>()
-  const isMobile = useMediaQuery({ maxWidth: 768 })
+  useMediaQuery({ maxWidth: 768 }) // 用于响应式布局，但当前页面未使用
   const [form] = Form.useForm()
   const [loading, setLoading] = useState(false)
   const [fetching, setFetching] = useState(false)
