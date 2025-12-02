@@ -99,3 +99,6 @@ test-results/
 *.backup
 *.old
 
+# Submodules and external dependencies
+clob-client/
+
