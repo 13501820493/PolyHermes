@@ -40,7 +40,6 @@ class WebSocketSubscriptionService(
      * 注册会话
      */
     fun registerSession(sessionId: String, callback: (WsMessage) -> Unit) {
-        logger.info("注册 WebSocket 会话: $sessionId")
         sessionCallbacks[sessionId] = callback
         sessionSubscriptions[sessionId] = mutableSetOf()
     }
@@ -49,7 +48,6 @@ class WebSocketSubscriptionService(
      * 注销会话
      */
     fun unregisterSession(sessionId: String) {
-        logger.info("注销 WebSocket 会话: $sessionId")
         
         // 取消所有订阅
         val channels = sessionSubscriptions.remove(sessionId) ?: emptySet()
@@ -67,12 +65,10 @@ class WebSocketSubscriptionService(
      * 订阅频道
      */
     fun subscribe(sessionId: String, channel: String, payload: Map<*, *>?) {
-        logger.info("订阅频道: $sessionId -> $channel")
         
         // 检查是否已经订阅
         val sessionChannels = sessionSubscriptions.getOrPut(sessionId) { mutableSetOf() }
         if (sessionChannels.contains(channel)) {
-            logger.debug("会话 $sessionId 已经订阅了频道 $channel，跳过重复订阅")
             sendSubscribeAck(sessionId, channel, true)
             return
         }
@@ -94,7 +90,6 @@ class WebSocketSubscriptionService(
                 scope.launch {
                     try {
                         positionPushService.sendFullData(sessionId)
-                        logger.info("已发送仓位首推数据给会话: $sessionId")
                     } catch (e: Exception) {
                         logger.error("发送仓位首推数据失败: $sessionId, ${e.message}", e)
                     }
@@ -107,7 +102,6 @@ class WebSocketSubscriptionService(
                 }
                 orderChannelCallbacks[sessionId] = callback
                 orderPushService.subscribeAllEnabled(callback)
-                logger.info("已订阅所有启用账户的订单推送: $sessionId")
             }
             else -> {
                 logger.warn("未知的频道: $channel")
@@ -120,7 +114,6 @@ class WebSocketSubscriptionService(
      * 取消订阅
      */
     fun unsubscribe(sessionId: String, channel: String) {
-        logger.info("取消订阅频道: $sessionId -> $channel")
         
         // 移除订阅关系
         sessionSubscriptions[sessionId]?.remove(channel)
@@ -134,7 +127,6 @@ class WebSocketSubscriptionService(
                 val callback = orderChannelCallbacks.remove(sessionId)
                 if (callback != null) {
                     orderPushService.unsubscribeAll(callback)
-                    logger.debug("已取消订阅订单推送: $sessionId -> $channel")
                 }
             }
         }

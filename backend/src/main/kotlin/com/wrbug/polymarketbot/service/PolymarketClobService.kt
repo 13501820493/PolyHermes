@@ -161,7 +161,6 @@ class PolymarketClobService(
                 adjustedPrice > BigDecimal("0.99") -> BigDecimal("0.99")
                 else -> adjustedPrice
             }
-            logger.debug("从订单表获取最优价（卖单）: tokenId=$tokenId, bestBid=$bestBid, adjustedPrice=${finalPrice.toPlainString()}")
             return finalPrice.toPlainString()
         } else {
             // 市价买单：需要 bestAsk（最低卖出价）
@@ -186,7 +185,6 @@ class PolymarketClobService(
                 adjustedPrice > BigDecimal("0.99") -> BigDecimal("0.99")
                 else -> adjustedPrice
             }
-            logger.debug("从订单表获取最优价（买单）: tokenId=$tokenId, bestAsk=$bestAsk, adjustedPrice=${finalPrice.toPlainString()}")
             return finalPrice.toPlainString()
         }
     }

@@ -62,7 +62,6 @@ class CopyTradingTemplateService(
             )
             
             val saved = templateRepository.save(template)
-            logger.info("成功创建模板: ${saved.id}, ${saved.templateName}")
             
             Result.success(toDto(saved))
         } catch (e: Exception) {
@@ -118,7 +117,6 @@ class CopyTradingTemplateService(
             )
             
             val saved = templateRepository.save(updated)
-            logger.info("成功更新模板: ${saved.id}")
             
             Result.success(toDto(saved))
         } catch (e: Exception) {
@@ -143,7 +141,6 @@ class CopyTradingTemplateService(
             }
             
             templateRepository.delete(template)
-            logger.info("成功删除模板: $templateId")
             
             Result.success(Unit)
         } catch (e: Exception) {
@@ -186,7 +183,6 @@ class CopyTradingTemplateService(
             )
             
             val saved = templateRepository.save(newTemplate)
-            logger.info("成功复制模板: ${sourceTemplate.id} -> ${saved.id}")
             
             Result.success(toDto(saved))
         } catch (e: Exception) {

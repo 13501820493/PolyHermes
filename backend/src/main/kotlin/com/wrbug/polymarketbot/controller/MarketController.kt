@@ -36,7 +36,6 @@ class MarketController(
             val result = runBlocking { accountService.getMarketPrice(request.marketId) }
             result.fold(
                 onSuccess = { response ->
-                    logger.info("成功获取市场价格: 市场=${request.marketId}")
                     ResponseEntity.ok(ApiResponse.success(response))
                 },
                 onFailure = { e ->
@@ -65,7 +64,6 @@ class MarketController(
             val result = runBlocking { clobService.getLatestPrice(request.tokenId) }
             result.fold(
                 onSuccess = { response ->
-                    logger.debug("成功获取最新价: tokenId=${request.tokenId}, bestBid=${response.bestBid}, bestAsk=${response.bestAsk}")
                     ResponseEntity.ok(ApiResponse.success(response))
                 },
                 onFailure = { e ->

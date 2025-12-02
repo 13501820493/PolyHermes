@@ -74,9 +74,6 @@ class PolymarketAuthInterceptor(
         val signature = generateSignature(signString, apiSecret)
         
         // 调试日志（仅在 DEBUG 级别输出）
-        logger.debug("L2 认证签名生成: method=$method, path=$requestPath, bodyLength=${bodyString?.length ?: 0}, timestamp=$timestamp")
-        logger.debug("签名字符串: $signString")
-        logger.debug("签名结果: ${signature.take(20)}...")
         
         // 重新创建请求体（如果原始请求有请求体）
         val newRequestBody = originalRequest.body?.let { requestBody ->

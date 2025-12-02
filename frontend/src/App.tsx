@@ -18,6 +18,10 @@ import TemplateAdd from './pages/TemplateAdd'
 import TemplateEdit from './pages/TemplateEdit'
 import CopyTradingList from './pages/CopyTradingList'
 import CopyTradingAdd from './pages/CopyTradingAdd'
+import CopyTradingStatistics from './pages/CopyTradingStatistics'
+import CopyTradingBuyOrders from './pages/CopyTradingBuyOrders'
+import CopyTradingSellOrders from './pages/CopyTradingSellOrders'
+import CopyTradingMatchedOrders from './pages/CopyTradingMatchedOrders'
 import { wsManager } from './services/websocket'
 import type { OrderPushMessage } from './types'
 
@@ -136,6 +140,10 @@ function App() {
             <Route path="/templates/edit/:id" element={<TemplateEdit />} />
             <Route path="/copy-trading" element={<CopyTradingList />} />
             <Route path="/copy-trading/add" element={<CopyTradingAdd />} />
+            <Route path="/copy-trading/statistics/:copyTradingId" element={<CopyTradingStatistics />} />
+            <Route path="/copy-trading/orders/buy/:copyTradingId" element={<CopyTradingBuyOrders />} />
+            <Route path="/copy-trading/orders/sell/:copyTradingId" element={<CopyTradingSellOrders />} />
+            <Route path="/copy-trading/orders/matched/:copyTradingId" element={<CopyTradingMatchedOrders />} />
             <Route path="/config" element={<ConfigPage />} />
             <Route path="/positions" element={<PositionList />} />
             <Route path="/statistics" element={<Statistics />} />

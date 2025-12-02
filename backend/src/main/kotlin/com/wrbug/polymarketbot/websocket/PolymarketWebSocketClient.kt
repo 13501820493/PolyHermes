@@ -39,7 +39,6 @@ class PolymarketWebSocketClient(
         // 如果启用了代理，配置代理
         if (proxy != null) {
             builder.proxy(proxy)
-            logger.info("已配置 WebSocket 代理: ${proxy.address()}")
         }
         
         builder.build()
@@ -50,7 +49,6 @@ class PolymarketWebSocketClient(
      */
     fun connect() {
         if (webSocket != null && isConnected) {
-            logger.debug("WebSocket 已连接: $sessionId")
             return
         }
         
@@ -61,7 +59,6 @@ class PolymarketWebSocketClient(
             
             webSocket = okHttpClient.newWebSocket(request, object : WebSocketListener() {
                 override fun onOpen(webSocket: WebSocket, response: okhttp3.Response) {
-                    logger.info("已成功连接到 Polymarket RTDS: $sessionId")
                     isConnected = true
                     
                     // 重置重连延迟（连接成功后重置为初始值）
@@ -85,17 +82,14 @@ class PolymarketWebSocketClient(
                 }
                 
                 override fun onMessage(webSocket: WebSocket, text: String) {
-                    logger.debug("收到 Polymarket 消息: $sessionId, $text")
                     onMessage(text)
                 }
                 
                 override fun onMessage(webSocket: WebSocket, bytes: ByteString) {
-                    logger.debug("收到 Polymarket 二进制消息: $sessionId")
                     onMessage(bytes.utf8())
                 }
                 
                 override fun onClosing(webSocket: WebSocket, code: Int, reason: String) {
-                    logger.info("Polymarket 连接正在关闭: $sessionId, code: $code, reason: $reason")
                     isConnected = false
                     stopPing()
                     // 如果不是正常关闭（code != 1000），尝试重连
@@ -105,7 +99,6 @@ class PolymarketWebSocketClient(
                 }
                 
                 override fun onClosed(webSocket: WebSocket, code: Int, reason: String) {
-                    logger.info("Polymarket 连接已关闭: $sessionId, code: $code, reason: $reason")
                     isConnected = false
                     stopPing()
                     // 如果不是正常关闭（code != 1000），尝试重连
@@ -138,7 +131,6 @@ class PolymarketWebSocketClient(
                 }
             })
             
-            logger.info("正在连接到 Polymarket RTDS: $sessionId, URL: $url")
         } catch (e: Exception) {
             logger.error("创建 WebSocket 连接失败: $sessionId, ${e.message}", e)
             throw e
@@ -158,7 +150,6 @@ class PolymarketWebSocketClient(
                 if (isConnected) {
                     try {
                         sendMessage("PING")
-                        logger.debug("已发送 PING: $sessionId")
                     } catch (e: Exception) {
                         logger.warn("发送 PING 失败: $sessionId, ${e.message}")
                         break
@@ -192,17 +183,14 @@ class PolymarketWebSocketClient(
                 
                 // 检查是否应该重连
                 if (!shouldReconnect) {
-                    logger.info("重连已禁用，停止重连: $sessionId")
                     return@launch
                 }
                 
                 // 如果已经连接，不需要重连
                 if (isConnected) {
-                    logger.debug("连接已恢复，取消重连: $sessionId")
                     return@launch
                 }
                 
-                logger.info("尝试重连 Polymarket WebSocket: $sessionId, 延迟: ${reconnectDelay}ms")
                 
                 // 清理旧的连接
                 webSocket = null
@@ -239,7 +227,6 @@ class PolymarketWebSocketClient(
             webSocket?.close(1000, "正常关闭")
             webSocket = null
             isConnected = false
-            logger.info("已关闭 WebSocket 连接: $sessionId")
         } catch (e: Exception) {
             logger.error("关闭连接失败: $sessionId, ${e.message}", e)
         }

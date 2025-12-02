@@ -48,7 +48,6 @@ class OrderPushService(
      */
     @PostConstruct
     fun init() {
-        logger.info("订单推送服务已初始化")
         scope.launch {
             connectAllAccounts()
         }
@@ -59,7 +58,6 @@ class OrderPushService(
      */
     @PreDestroy
     fun destroy() {
-        logger.info("停止订单推送服务")
         accountConnections.values.forEach { client ->
             try {
                 if (client.isConnected()) {
@@ -90,7 +88,6 @@ class OrderPushService(
      * 订阅所有启用的账户
      */
     fun subscribeAllEnabled(callback: (OrderPushMessage) -> Unit) {
-        logger.info("订阅所有启用账户的订单推送")
         val accounts = accountRepository.findAll()
         accounts.forEach { account ->
             if (hasApiCredentials(account) && account.isEnabled) {
@@ -166,12 +163,10 @@ class OrderPushService(
         }
 
         if (!account.isEnabled) {
-            logger.debug("账户 ${account.id} 未启用，跳过连接")
             return
         }
 
         if (accountConnections.containsKey(account.id)) {
-            logger.debug("账户 ${account.id} 已存在连接，跳过")
             return
         }
 
@@ -193,7 +188,6 @@ class OrderPushService(
                         if (currentClient != null) {
                             try {
                                 sendSubscribeMessage(currentClient, account)
-                                logger.info("已为账户 ${account.id} (${account.accountName ?: account.walletAddress}) 建立 User Channel 连接并发送订阅消息")
                             } catch (e: Exception) {
                                 logger.error("发送订阅消息失败: account=${account.id}, ${e.message}", e)
                                 // 如果订阅失败，关闭连接（会触发重连）
@@ -210,7 +204,6 @@ class OrderPushService(
                         if (currentClient != null) {
                             try {
                                 sendSubscribeMessage(currentClient, account)
-                                logger.info("账户 ${account.id} 重连成功，已重新发送订阅消息")
                             } catch (e: Exception) {
                                 logger.error("重连后发送订阅消息失败: account=${account.id}, ${e.message}", e)
                             }
@@ -257,7 +250,6 @@ class OrderPushService(
 
             val json = objectMapper.writeValueAsString(subscribeMessage)
             client.sendMessage(json)
-            logger.info("已发送 User Channel 订阅消息: account=${account.id}, apiKey=${account.apiKey?.take(10)}...")
         } catch (e: Exception) {
             logger.error("发送订阅消息失败: account=${account.id}, ${e.message}", e)
         }
@@ -270,7 +262,6 @@ class OrderPushService(
         try {
             // 处理心跳响应（PONG），直接返回
             if (message.trim() == "PONG" || message.trim() == "pong") {
-                logger.debug("收到 PONG 响应: account=${account.id}")
                 return
             }
 
@@ -304,12 +295,10 @@ class OrderPushService(
                 }
             } else {
                 // 记录其他类型的消息（用于调试）
-                logger.debug("收到非订单消息: account=${account.id}, eventType=$eventType")
             }
         } catch (e: Exception) {
             // 如果解析失败，可能是非 JSON 消息（如 PONG），记录为 debug 级别
             if (message.trim() == "PONG" || message.trim() == "pong") {
-                logger.debug("收到 PONG 响应: account=${account.id}")
             } else {
                 logger.error("处理订单消息失败: account=${account.id}, message=${message.take(100)}, ${e.message}", e)
             }
@@ -328,7 +317,6 @@ class OrderPushService(
         return try {
             // 检查账户是否有 API 凭证
             if (account.apiKey == null || account.apiSecret == null || account.apiPassphrase == null) {
-                logger.debug("账户 ${account.id} 未配置 API 凭证，无法获取订单详情")
                 return null
             }
             
@@ -395,18 +383,14 @@ class OrderPushService(
                 val markets = response.body()!!
                 if (markets.isNotEmpty()) {
                     val market = markets.first()
-                    logger.debug("获取市场信息成功: conditionId=$conditionId, question=${market.question}")
                     return market
                 } else {
-                    logger.debug("未找到市场信息: conditionId=$conditionId")
                     return null
                 }
             } else {
-                logger.debug("获取市场信息失败: conditionId=$conditionId, code=${response.code()}, message=${response.message()}")
                 null
             }
         } catch (e: Exception) {
-            logger.debug("获取市场信息异常: conditionId=$conditionId, ${e.message}")
             null
         }
     }
@@ -415,7 +399,6 @@ class OrderPushService(
      * 订阅账户的订单推送（保留用于向后兼容）
      */
     fun subscribe(accountId: Long, callback: (OrderPushMessage) -> Unit) {
-        logger.info("订阅账户订单推送: $accountId")
         accountCallbacks.getOrPut(accountId) { mutableSetOf() }.add(callback)
 
         // 如果账户连接不存在，尝试建立连接
@@ -431,7 +414,6 @@ class OrderPushService(
      * 取消订阅账户的订单推送（保留用于向后兼容）
      */
     fun unsubscribe(accountId: Long, callback: (OrderPushMessage) -> Unit) {
-        logger.info("取消订阅账户订单推送: $accountId")
         accountCallbacks[accountId]?.remove(callback)
 
         // 如果没有订阅者了，可以考虑关闭连接（但暂时保持连接，以便后续订阅）
@@ -441,7 +423,6 @@ class OrderPushService(
      * 断开指定账户的连接
      */
     fun disconnectAccount(accountId: Long) {
-        logger.info("断开账户连接: $accountId")
         val client = accountConnections.remove(accountId)
         client?.let {
             try {

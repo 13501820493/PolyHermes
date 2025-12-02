@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Table, Button, Space, Tag, Popconfirm, Switch, message, Select, Input } from 'antd'
-import { PlusOutlined, DeleteOutlined } from '@ant-design/icons'
+import { Card, Table, Button, Space, Tag, Popconfirm, Switch, message, Select, Input, Dropdown, Divider, Spin } from 'antd'
+import { PlusOutlined, DeleteOutlined, BarChartOutlined, UnorderedListOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons'
+import type { MenuProps } from 'antd'
 import { apiService } from '../services/api'
 import { useAccountStore } from '../store/accountStore'
-import type { CopyTrading, Account, Leader, CopyTradingTemplate } from '../types'
+import type { CopyTrading, Account, Leader, CopyTradingTemplate, CopyTradingStatistics } from '../types'
 import { useMediaQuery } from 'react-responsive'
+import { formatUSDC } from '../utils'
 
 const { Option } = Select
 
@@ -17,6 +19,8 @@ const CopyTradingList: React.FC = () => {
   const [leaders, setLeaders] = useState<Leader[]>([])
   const [templates, setTemplates] = useState<CopyTradingTemplate[]>([])
   const [loading, setLoading] = useState(false)
+  const [statisticsMap, setStatisticsMap] = useState<Record<number, CopyTradingStatistics>>({})
+  const [loadingStatistics, setLoadingStatistics] = useState<Set<number>>(new Set())
   const [filters, setFilters] = useState<{
     accountId?: number
     templateId?: number
@@ -62,7 +66,12 @@ const CopyTradingList: React.FC = () => {
     try {
       const response = await apiService.copyTrading.list(filters)
       if (response.data.code === 0 && response.data.data) {
-        setCopyTradings(response.data.data.list || [])
+        const list = response.data.data.list || []
+        setCopyTradings(list)
+        // 为每个跟单关系获取统计信息
+        list.forEach((ct: CopyTrading) => {
+          fetchStatistics(ct.id)
+        })
       } else {
         message.error(response.data.msg || '获取跟单列表失败')
       }
@@ -71,6 +80,50 @@ const CopyTradingList: React.FC = () => {
     } finally {
       setLoading(false)
     }
+  }
+  
+  const fetchStatistics = async (copyTradingId: number) => {
+    // 如果正在加载或已有数据，跳过
+    if (loadingStatistics.has(copyTradingId) || statisticsMap[copyTradingId]) {
+      return
+    }
+    
+    setLoadingStatistics(prev => new Set(prev).add(copyTradingId))
+    try {
+      const response = await apiService.statistics.detail({ copyTradingId })
+      if (response.data.code === 0 && response.data.data) {
+        setStatisticsMap(prev => ({
+          ...prev,
+          [copyTradingId]: response.data.data
+        }))
+      }
+    } catch (error: any) {
+      console.error(`获取跟单统计失败: copyTradingId=${copyTradingId}`, error)
+    } finally {
+      setLoadingStatistics(prev => {
+        const next = new Set(prev)
+        next.delete(copyTradingId)
+        return next
+      })
+    }
+  }
+  
+  const getPnlColor = (value: string): string => {
+    const num = parseFloat(value)
+    if (isNaN(num)) return '#666'
+    return num >= 0 ? '#3f8600' : '#cf1322'
+  }
+  
+  const getPnlIcon = (value: string) => {
+    const num = parseFloat(value)
+    if (isNaN(num)) return null
+    return num >= 0 ? <ArrowUpOutlined /> : <ArrowDownOutlined />
+  }
+  
+  const formatPercent = (value: string): string => {
+    const num = parseFloat(value)
+    if (isNaN(num)) return '-'
+    return `${num >= 0 ? '+' : ''}${num.toFixed(2)}%`
   }
   
   const handleToggleStatus = async (copyTrading: CopyTrading) => {
@@ -108,11 +161,17 @@ const CopyTradingList: React.FC = () => {
     {
       title: '钱包',
       key: 'account',
+      width: isMobile ? 100 : 150,
       render: (_: any, record: CopyTrading) => (
         <div>
-          <div>{record.accountName || `账户 ${record.accountId}`}</div>
-          <div style={{ fontSize: 12, color: '#999' }}>
-            {record.walletAddress.slice(0, 6)}...{record.walletAddress.slice(-4)}
+          <div style={{ fontSize: isMobile ? 13 : 14, fontWeight: 500 }}>
+            {record.accountName || `账户 ${record.accountId}`}
+          </div>
+          <div style={{ fontSize: isMobile ? 11 : 12, color: '#999', marginTop: 2 }}>
+            {isMobile 
+              ? `${record.walletAddress.slice(0, 4)}...${record.walletAddress.slice(-3)}`
+              : `${record.walletAddress.slice(0, 6)}...${record.walletAddress.slice(-4)}`
+            }
           </div>
         </div>
       )
@@ -121,16 +180,25 @@ const CopyTradingList: React.FC = () => {
       title: '模板',
       dataIndex: 'templateName',
       key: 'templateName',
-      render: (text: string) => <strong>{text}</strong>
+      width: isMobile ? 100 : 120,
+      render: (text: string) => (
+        <strong style={{ fontSize: isMobile ? 13 : 14 }}>{text}</strong>
+      )
     },
     {
       title: 'Leader',
       key: 'leader',
+      width: isMobile ? 100 : 150,
       render: (_: any, record: CopyTrading) => (
         <div>
-          <div>{record.leaderName || `Leader ${record.leaderId}`}</div>
-          <div style={{ fontSize: 12, color: '#999' }}>
-            {record.leaderAddress.slice(0, 6)}...{record.leaderAddress.slice(-4)}
+          <div style={{ fontSize: isMobile ? 13 : 14, fontWeight: 500 }}>
+            {record.leaderName || `Leader ${record.leaderId}`}
+          </div>
+          <div style={{ fontSize: isMobile ? 11 : 12, color: '#999', marginTop: 2 }}>
+            {isMobile 
+              ? `${record.leaderAddress.slice(0, 4)}...${record.leaderAddress.slice(-3)}`
+              : `${record.leaderAddress.slice(0, 6)}...${record.leaderAddress.slice(-4)}`
+            }
           </div>
         </div>
       )
@@ -139,6 +207,7 @@ const CopyTradingList: React.FC = () => {
       title: '状态',
       dataIndex: 'enabled',
       key: 'enabled',
+      width: isMobile ? 80 : 100,
       render: (enabled: boolean, record: CopyTrading) => (
         <Switch
           checked={enabled}
@@ -149,26 +218,136 @@ const CopyTradingList: React.FC = () => {
       )
     },
     {
+      title: '总盈亏',
+      key: 'totalPnl',
+      width: isMobile ? 100 : 150,
+      render: (_: any, record: CopyTrading) => {
+        const stats = statisticsMap[record.id]
+        if (!stats) {
+          return loadingStatistics.has(record.id) ? (
+            <span style={{ fontSize: isMobile ? 11 : 12 }}>加载中...</span>
+          ) : (
+            <span style={{ fontSize: isMobile ? 11 : 12 }}>-</span>
+          )
+        }
+        return (
+          <div>
+            <div style={{ 
+              color: getPnlColor(stats.totalPnl), 
+              fontWeight: 500,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 4,
+              fontSize: isMobile ? 12 : 14
+            }}>
+              {getPnlIcon(stats.totalPnl)}
+              {isMobile ? formatUSDC(stats.totalPnl) : `${formatUSDC(stats.totalPnl)} USDC`}
+            </div>
+            {!isMobile && (
+              <div style={{ 
+                fontSize: 12, 
+                color: getPnlColor(stats.totalPnlPercent),
+                marginTop: 4
+              }}>
+                {formatPercent(stats.totalPnlPercent)}
+              </div>
+            )}
+          </div>
+        )
+      }
+    },
+    {
       title: '操作',
       key: 'action',
-      width: isMobile ? 80 : 100,
-      render: (_: any, record: CopyTrading) => (
-        <Popconfirm
-          title="确定要删除这个跟单关系吗？"
-          onConfirm={() => handleDelete(record.id)}
-          okText="确定"
-          cancelText="取消"
-        >
-          <Button
-            type="link"
-            size="small"
-            danger
-            icon={<DeleteOutlined />}
-          >
-            删除
-          </Button>
-        </Popconfirm>
-      )
+      width: isMobile ? 100 : 200,
+      fixed: 'right' as const,
+      render: (_: any, record: CopyTrading) => {
+        const menuItems: MenuProps['items'] = [
+          {
+            key: 'statistics',
+            label: '查看统计',
+            icon: <BarChartOutlined />,
+            onClick: () => navigate(`/copy-trading/statistics/${record.id}`)
+          },
+          {
+            key: 'buyOrders',
+            label: '买入订单',
+            icon: <UnorderedListOutlined />,
+            onClick: () => navigate(`/copy-trading/orders/buy/${record.id}`)
+          },
+          {
+            key: 'sellOrders',
+            label: '卖出订单',
+            icon: <UnorderedListOutlined />,
+            onClick: () => navigate(`/copy-trading/orders/sell/${record.id}`)
+          },
+          {
+            key: 'matchedOrders',
+            label: '匹配关系',
+            icon: <UnorderedListOutlined />,
+            onClick: () => navigate(`/copy-trading/orders/matched/${record.id}`)
+          },
+          {
+            type: 'divider'
+          },
+          {
+            key: 'delete',
+            label: (
+              <Popconfirm
+                title="确定要删除这个跟单关系吗？"
+                onConfirm={() => handleDelete(record.id)}
+                okText="确定"
+                cancelText="取消"
+                onCancel={(e) => e?.stopPropagation()}
+              >
+                <span style={{ color: '#ff4d4f' }}>删除</span>
+              </Popconfirm>
+            ),
+            danger: true
+          }
+        ]
+        
+        return (
+          <Space size={isMobile ? 'small' : 'middle'} wrap>
+            {!isMobile && (
+              <Button
+                type="link"
+                size="small"
+                icon={<BarChartOutlined />}
+                onClick={() => navigate(`/copy-trading/statistics/${record.id}`)}
+              >
+                统计
+              </Button>
+            )}
+            <Dropdown menu={{ items: menuItems }} trigger={['click']}>
+              <Button
+                type="link"
+                size="small"
+                icon={<UnorderedListOutlined />}
+              >
+                {isMobile ? '' : '订单'}
+              </Button>
+            </Dropdown>
+            {!isMobile && (
+              <Popconfirm
+                title="确定要删除这个跟单关系吗？"
+                onConfirm={() => handleDelete(record.id)}
+                okText="确定"
+                cancelText="取消"
+              >
+                <Button
+                  type="link"
+                  size="small"
+                  danger
+                  icon={<DeleteOutlined />}
+                >
+                  删除
+                </Button>
+              </Popconfirm>
+            )}
+          </Space>
+        )
+      }
     }
   ]
   
@@ -241,18 +420,205 @@ const CopyTradingList: React.FC = () => {
           </Select>
         </div>
         
-        <Table
-          columns={columns}
-          dataSource={copyTradings}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            pageSize: isMobile ? 10 : 20,
-            showSizeChanger: !isMobile,
-            showTotal: (total) => `共 ${total} 条`
-          }}
-          scroll={{ x: isMobile ? 800 : 'auto' }}
-        />
+        {isMobile ? (
+          // 移动端卡片布局
+          <div>
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '40px' }}>
+                <Spin size="large" />
+              </div>
+            ) : copyTradings.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+                暂无跟单配置
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {copyTradings.map((record) => {
+                  const stats = statisticsMap[record.id]
+                  const date = new Date(record.createdAt)
+                  const formattedDate = date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })
+                  
+                  return (
+                    <Card
+                      key={record.id}
+                      style={{
+                        borderRadius: '12px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                        border: '1px solid #e8e8e8'
+                      }}
+                      bodyStyle={{ padding: '16px' }}
+                    >
+                      {/* 基本信息 */}
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ 
+                          fontSize: '16px', 
+                          fontWeight: 'bold', 
+                          marginBottom: '8px',
+                          color: '#1890ff'
+                        }}>
+                          {record.templateName}
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                          <Tag color={record.enabled ? 'green' : 'red'}>
+                            {record.enabled ? '启用' : '禁用'}
+                          </Tag>
+                        </div>
+                      </div>
+                      
+                      <Divider style={{ margin: '12px 0' }} />
+                      
+                      {/* 账户信息 */}
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>账户</div>
+                        <div style={{ fontSize: '14px', fontWeight: '500' }}>
+                          {record.accountName || `账户 ${record.accountId}`}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>
+                          {record.walletAddress.slice(0, 6)}...{record.walletAddress.slice(-4)}
+                        </div>
+                      </div>
+                      
+                      {/* Leader 信息 */}
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>Leader</div>
+                        <div style={{ fontSize: '14px', fontWeight: '500' }}>
+                          {record.leaderName || `Leader ${record.leaderId}`}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#999', marginTop: '2px' }}>
+                          {record.leaderAddress.slice(0, 6)}...{record.leaderAddress.slice(-4)}
+                        </div>
+                      </div>
+                      
+                      {/* 总盈亏 */}
+                      {stats && (
+                        <div style={{ marginBottom: '12px' }}>
+                          <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>总盈亏</div>
+                          <div style={{ 
+                            fontSize: '16px', 
+                            fontWeight: 'bold',
+                            color: getPnlColor(stats.totalPnl),
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '4px'
+                          }}>
+                            {getPnlIcon(stats.totalPnl)}
+                            {formatUSDC(stats.totalPnl)} USDC
+                          </div>
+                          <div style={{ 
+                            fontSize: '12px', 
+                            color: getPnlColor(stats.totalPnlPercent),
+                            marginTop: '4px'
+                          }}>
+                            {formatPercent(stats.totalPnlPercent)}
+                          </div>
+                        </div>
+                      )}
+                      
+                      {loadingStatistics.has(record.id) && (
+                        <div style={{ marginBottom: '12px', fontSize: '12px', color: '#999' }}>
+                          加载统计中...
+                        </div>
+                      )}
+                      
+                      {/* 创建时间 */}
+                      <div style={{ marginBottom: '16px' }}>
+                        <div style={{ fontSize: '12px', color: '#999' }}>
+                          创建时间: {formattedDate}
+                        </div>
+                      </div>
+                      
+                      {/* 操作按钮 */}
+                      <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                        <Button
+                          type="primary"
+                          size="small"
+                          icon={<BarChartOutlined />}
+                          onClick={() => navigate(`/copy-trading/statistics/${record.id}`)}
+                          style={{ flex: 1, minWidth: '80px' }}
+                        >
+                          统计
+                        </Button>
+                        <Dropdown 
+                          menu={{ 
+                            items: [
+                              {
+                                key: 'statistics',
+                                label: '查看统计',
+                                icon: <BarChartOutlined />,
+                                onClick: () => navigate(`/copy-trading/statistics/${record.id}`)
+                              },
+                              {
+                                key: 'buyOrders',
+                                label: '买入订单',
+                                icon: <UnorderedListOutlined />,
+                                onClick: () => navigate(`/copy-trading/orders/buy/${record.id}`)
+                              },
+                              {
+                                key: 'sellOrders',
+                                label: '卖出订单',
+                                icon: <UnorderedListOutlined />,
+                                onClick: () => navigate(`/copy-trading/orders/sell/${record.id}`)
+                              },
+                              {
+                                key: 'matchedOrders',
+                                label: '匹配关系',
+                                icon: <UnorderedListOutlined />,
+                                onClick: () => navigate(`/copy-trading/orders/matched/${record.id}`)
+                              }
+                            ]
+                          }} 
+                          trigger={['click']}
+                        >
+                          <Button
+                            size="small"
+                            icon={<UnorderedListOutlined />}
+                            style={{ flex: 1, minWidth: '80px' }}
+                          >
+                            订单
+                          </Button>
+                        </Dropdown>
+                        <Popconfirm
+                          title="确定要删除这个跟单关系吗？"
+                          onConfirm={() => handleDelete(record.id)}
+                          okText="确定"
+                          cancelText="取消"
+                        >
+                          <Button
+                            danger
+                            size="small"
+                            icon={<DeleteOutlined />}
+                            style={{ flex: 1, minWidth: '80px' }}
+                          >
+                            删除
+                          </Button>
+                        </Popconfirm>
+                      </div>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
+          </div>
+        ) : (
+          // 桌面端表格布局
+          <Table
+            columns={columns}
+            dataSource={copyTradings}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+              pageSize: 20,
+              showSizeChanger: true,
+              showTotal: (total) => `共 ${total} 条`
+            }}
+          />
+        )}
       </Card>
     </div>
   )

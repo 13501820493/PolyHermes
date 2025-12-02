@@ -23,7 +23,6 @@ class PolymarketWebSocketHandler : WebSocketHandler {
     private val polymarketConnections = ConcurrentHashMap<String, PolymarketWebSocketClient>()
     
     override fun afterConnectionEstablished(session: WebSocketSession) {
-        logger.info("客户端连接建立: ${session.id}")
         clientSessions[session.id] = session
         
         try {
@@ -42,7 +41,6 @@ class PolymarketWebSocketHandler : WebSocketHandler {
             // 异步连接，不阻塞
             try {
                 polymarketClient.connect()
-                logger.info("正在连接到 Polymarket RTDS: ${session.id}")
             } catch (e: Exception) {
                 logger.error("启动 Polymarket 连接失败: ${e.message}", e)
                 // 连接失败时清理资源
@@ -64,7 +62,6 @@ class PolymarketWebSocketHandler : WebSocketHandler {
     }
     
     override fun handleMessage(session: WebSocketSession, message: WebSocketMessage<*>) {
-        logger.debug("收到客户端消息: ${session.id}, ${message.payload}")
         
         val polymarketClient = polymarketConnections[session.id]
         if (polymarketClient != null) {
@@ -89,7 +86,6 @@ class PolymarketWebSocketHandler : WebSocketHandler {
     }
     
     override fun afterConnectionClosed(session: WebSocketSession, closeStatus: CloseStatus) {
-        logger.info("客户端连接关闭: ${session.id}, 状态: $closeStatus")
         cleanup(session.id)
     }
     
@@ -132,7 +128,6 @@ class PolymarketWebSocketHandler : WebSocketHandler {
             
             // 移除客户端会话
             clientSessions.remove(sessionId)
-            logger.debug("已清理资源: $sessionId")
         } catch (e: Exception) {
             logger.error("清理资源时发生错误: ${sessionId}, ${e.message}", e)
         }

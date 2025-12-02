@@ -496,3 +496,108 @@ export interface RedeemablePositionsSummary {
   positions: RedeemablePositionInfo[]
 }
 
+/**
+ * 跟单关系统计信息
+ */
+export interface CopyTradingStatistics {
+  copyTradingId: number
+  accountId: number
+  accountName: string | null
+  leaderId: number
+  leaderName: string | null
+  templateId: number
+  templateName: string | null
+  enabled: boolean
+  
+  // 买入统计
+  totalBuyQuantity: string
+  totalBuyOrders: number
+  totalBuyAmount: string
+  avgBuyPrice: string
+  
+  // 卖出统计
+  totalSellQuantity: string
+  totalSellOrders: number
+  totalSellAmount: string
+  
+  // 持仓统计
+  currentPositionQuantity: string
+  currentPositionValue: string
+  
+  // 盈亏统计
+  totalRealizedPnl: string
+  totalUnrealizedPnl: string
+  totalPnl: string
+  totalPnlPercent: string
+}
+
+/**
+ * 买入订单信息
+ */
+export interface BuyOrderInfo {
+  orderId: string
+  leaderTradeId: string
+  marketId: string
+  side: string
+  quantity: string
+  price: string
+  amount: string
+  matchedQuantity: string
+  remainingQuantity: string
+  status: 'filled' | 'partially_matched' | 'fully_matched'
+  createdAt: number
+}
+
+/**
+ * 卖出订单信息
+ */
+export interface SellOrderInfo {
+  orderId: string
+  leaderTradeId: string
+  marketId: string
+  side: string
+  quantity: string
+  price: string
+  amount: string
+  realizedPnl: string
+  createdAt: number
+}
+
+/**
+ * 匹配订单信息
+ */
+export interface MatchedOrderInfo {
+  sellOrderId: string
+  buyOrderId: string
+  matchedQuantity: string
+  buyPrice: string
+  sellPrice: string
+  realizedPnl: string
+  matchedAt: number
+}
+
+/**
+ * 订单跟踪列表响应
+ */
+export interface OrderTrackingListResponse {
+  list: BuyOrderInfo[] | SellOrderInfo[] | MatchedOrderInfo[]
+  total: number
+  page: number
+  limit: number
+}
+
+/**
+ * 订单跟踪查询请求
+ */
+export interface OrderTrackingRequest {
+  copyTradingId: number
+  type: 'buy' | 'sell' | 'matched'
+  page?: number
+  limit?: number
+  marketId?: string
+  side?: string
+  status?: string
+  sellOrderId?: string
+  buyOrderId?: string
+}
+

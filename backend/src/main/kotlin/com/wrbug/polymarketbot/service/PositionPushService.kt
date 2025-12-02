@@ -45,7 +45,6 @@ class PositionPushService(
      */
     @PostConstruct
     fun init() {
-        logger.info("仓位推送服务已初始化，轮询间隔: ${pollingInterval}ms，等待客户端连接...")
     }
     
     /**
@@ -53,7 +52,6 @@ class PositionPushService(
      */
     @PreDestroy
     fun destroy() {
-        logger.info("停止仓位推送服务")
         synchronized(lock) {
             pollingJob?.cancel()
             pollingJob = null
@@ -65,7 +63,6 @@ class PositionPushService(
      * 订阅仓位推送（新接口）
      */
     fun subscribe(sessionId: String, callback: (PositionPushMessage) -> Unit) {
-        logger.info("订阅仓位推送: $sessionId")
         registerSession(sessionId, callback)
     }
     
@@ -73,7 +70,6 @@ class PositionPushService(
      * 取消订阅仓位推送（新接口）
      */
     fun unsubscribe(sessionId: String) {
-        logger.info("取消订阅仓位推送: $sessionId")
         unregisterSession(sessionId)
     }
     
@@ -136,7 +132,6 @@ class PositionPushService(
                     
                     // 发送给指定客户端
                     clientCallbacks[sessionId]?.invoke(message)
-                    logger.debug("已发送全量仓位数据给客户端: $sessionId")
                 }
             } else {
                 logger.warn("获取仓位数据失败，无法发送全量数据: ${result.exceptionOrNull()?.message}")
@@ -156,7 +151,6 @@ class PositionPushService(
             
             // 启动新的轮询任务
             pollingJob = scope.launch {
-                logger.info("轮询任务已启动，间隔: ${pollingInterval}ms")
                 while (isActive) {
                     try {
                         pollAndPush()
@@ -176,7 +170,6 @@ class PositionPushService(
         synchronized(lock) {
             pollingJob?.cancel()
             pollingJob = null
-            logger.info("轮询任务已停止")
         }
     }
     
@@ -186,7 +179,6 @@ class PositionPushService(
     private suspend fun pollAndPush() {
         // 双重检查：如果没有客户端连接，跳过轮询（虽然理论上不应该发生，但作为安全措施）
         if (clientCallbacks.isEmpty()) {
-            logger.debug("没有客户端连接，跳过本次轮询")
             return
         }
         
@@ -220,7 +212,6 @@ class PositionPushService(
                             }
                         }
                         
-                        logger.debug("已推送仓位增量更新，当前仓位变化: ${incremental.currentPositions.size}, 历史仓位变化: ${incremental.historyPositions.size}, 删除: ${incremental.removedKeys.size}")
                     }
                     
                     // 更新快照

@@ -42,7 +42,6 @@ class CopyTradingWebSocketService(
      * 启动WebSocket监听
      */
     fun start(leaders: List<Leader>) {
-        logger.info("启动WebSocket监听，Leader数量: ${leaders.size}")
         
         leaders.forEach { leader ->
             try {
@@ -63,7 +62,6 @@ class CopyTradingWebSocketService(
         }
         
         if (leaderClients.containsKey(leader.id)) {
-            logger.debug("Leader ${leader.id} 已经在监听中，跳过")
             return
         }
         
@@ -98,7 +96,6 @@ class CopyTradingWebSocketService(
         scope.launch {
             try {
                 client.connect()
-                logger.info("已启动WebSocket监听: leaderId=$leaderId, address=$leaderAddress")
             } catch (e: Exception) {
                 logger.error("连接WebSocket失败: leaderId=$leaderId", e)
                 leaderClients.remove(leaderId)
@@ -117,7 +114,6 @@ class CopyTradingWebSocketService(
         if (client != null) {
             try {
                 client.closeConnection()
-                logger.info("已停止WebSocket监听: leaderId=$leaderId")
             } catch (e: Exception) {
                 logger.error("关闭WebSocket连接失败: leaderId=$leaderId", e)
             }
@@ -128,7 +124,6 @@ class CopyTradingWebSocketService(
      * 停止所有监听
      */
     fun stop() {
-        logger.info("停止所有WebSocket监听...")
         val leaderIds = leaderClients.keys.toList()
         leaderIds.forEach { leaderId ->
             removeLeader(leaderId)
@@ -150,7 +145,6 @@ class CopyTradingWebSocketService(
             """.trimIndent()
             
             client.sendMessage(subscribeMessage)
-            logger.info("已订阅用户交易频道: $userAddress")
         } catch (e: Exception) {
             logger.error("订阅用户交易频道失败: $userAddress", e)
         }
@@ -163,7 +157,6 @@ class CopyTradingWebSocketService(
         try {
             // 处理PONG响应
             if (message.trim() == "PONG") {
-                logger.debug("收到PONG响应: leaderId=$leaderId")
                 return
             }
             
@@ -173,7 +166,6 @@ class CopyTradingWebSocketService(
             // 检查消息类型
             val eventType = json.get("event_type")?.asString
             if (eventType != "trade") {
-                logger.debug("忽略非交易事件: leaderId=$leaderId, eventType=$eventType")
                 return
             }
             

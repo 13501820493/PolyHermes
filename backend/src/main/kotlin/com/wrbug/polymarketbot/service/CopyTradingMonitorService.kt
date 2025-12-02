@@ -31,7 +31,6 @@ class CopyTradingMonitorService(
      */
     @PostConstruct
     fun init() {
-        logger.info("跟单监听服务初始化...")
         scope.launch {
             try {
                 startMonitoring()
@@ -46,7 +45,6 @@ class CopyTradingMonitorService(
      */
     @PreDestroy
     fun destroy() {
-        logger.info("停止跟单监听服务...")
         scope.cancel()
         // 只使用轮询，不使用WebSocket
         pollingService.stop()
@@ -60,7 +58,6 @@ class CopyTradingMonitorService(
         val enabledCopyTradings = copyTradingRepository.findByEnabledTrue()
         
         if (enabledCopyTradings.isEmpty()) {
-            logger.info("没有启用的跟单关系，等待添加...")
             return
         }
         
@@ -70,7 +67,6 @@ class CopyTradingMonitorService(
             leaderRepository.findById(leaderId).orElse(null)
         }
         
-        logger.info("开始监听 ${leaders.size} 个Leader的交易: ${leaders.map { it.leaderAddress }}")
         
         // 3. 启动轮询监听（使用 /activity 接口，不需要认证）
         // 注意：WebSocket 需要认证才能订阅其他用户的交易，因此禁用WebSocket，只使用轮询
@@ -86,11 +82,9 @@ class CopyTradingMonitorService(
         
         val copyTradings = copyTradingRepository.findByLeaderIdAndEnabledTrue(leaderId)
         if (copyTradings.isEmpty()) {
-            logger.debug("Leader $leaderId 没有启用的跟单关系，不启动监听")
             return
         }
         
-        logger.info("添加Leader监听: ${leader.leaderAddress}")
         // 只使用轮询，不使用WebSocket（需要认证）
         pollingService.addLeader(leader)
     }
@@ -101,11 +95,9 @@ class CopyTradingMonitorService(
     suspend fun removeLeaderMonitoring(leaderId: Long) {
         val copyTradings = copyTradingRepository.findByLeaderIdAndEnabledTrue(leaderId)
         if (copyTradings.isNotEmpty()) {
-            logger.debug("Leader $leaderId 仍有启用的跟单关系，不停止监听")
             return
         }
         
-        logger.info("移除Leader监听: leaderId=$leaderId")
         // 只使用轮询，不使用WebSocket
         pollingService.removeLeader(leaderId)
     }
@@ -114,7 +106,6 @@ class CopyTradingMonitorService(
      * 重新启动监听（当跟单关系状态改变时调用）
      */
     suspend fun restartMonitoring() {
-        logger.info("重新启动跟单监听...")
         // 只使用轮询，不使用WebSocket
         pollingService.stop()
         delay(1000)  // 等待1秒

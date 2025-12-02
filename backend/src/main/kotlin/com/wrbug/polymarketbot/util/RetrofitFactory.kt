@@ -196,7 +196,6 @@ class ResponseLoggingInterceptor : Interceptor {
                     )
                 }
             } catch (e: Exception) {
-                logger.debug("读取响应体失败: ${e.message}")
             }
         }
         

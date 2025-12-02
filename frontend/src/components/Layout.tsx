@@ -35,7 +35,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // 获取当前应该打开的父菜单
   const getInitialOpenKeys = (): string[] => {
     const path = location.pathname
-    if (path.startsWith('/templates') || path.startsWith('/copy-trading')) {
+    if (path.startsWith('/leaders') || path.startsWith('/templates') || path.startsWith('/copy-trading')) {
       return ['/copy-trading-management']
     }
     return []
@@ -46,7 +46,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   // 当路径变化时，自动打开对应的父菜单
   useEffect(() => {
     const path = location.pathname
-    if (path.startsWith('/templates') || path.startsWith('/copy-trading')) {
+    if (path.startsWith('/leaders') || path.startsWith('/templates') || path.startsWith('/copy-trading')) {
       setOpenKeys(['/copy-trading-management'])
     }
   }, [location.pathname])
@@ -58,15 +58,15 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       label: '账户管理'
     },
     {
-      key: '/leaders',
-      icon: <UserOutlined />,
-      label: 'Leader 管理'
-    },
-    {
       key: '/copy-trading-management',
       icon: <AppstoreOutlined />,
-      label: '跟单管理',
+      label: '跟单交易',
       children: [
+        {
+          key: '/leaders',
+          icon: <UserOutlined />,
+          label: 'Leader 管理'
+        },
         {
           key: '/templates',
           icon: <FileTextOutlined />,
@@ -118,7 +118,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           justifyContent: 'space-between'
         }}>
           <div style={{ color: '#fff', fontSize: '18px', fontWeight: 'bold' }}>
-            Polymarket 跟单
+            PolyHermes
           </div>
           <Button
             type="text"
@@ -179,7 +179,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           fontWeight: 'bold',
           flexShrink: 0
         }}>
-          Polymarket 跟单
+          PolyHermes
         </div>
         <Menu
           mode="inline"

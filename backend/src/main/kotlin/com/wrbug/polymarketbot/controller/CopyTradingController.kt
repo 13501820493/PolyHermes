@@ -36,7 +36,6 @@ class CopyTradingController(
             val result = copyTradingService.createCopyTrading(request)
             result.fold(
                 onSuccess = { copyTrading ->
-                    logger.info("成功创建跟单: ${copyTrading.id}")
                     ResponseEntity.ok(ApiResponse.success(copyTrading))
                 },
                 onFailure = { e ->
@@ -88,7 +87,6 @@ class CopyTradingController(
             val result = copyTradingService.updateCopyTradingStatus(request)
             result.fold(
                 onSuccess = { copyTrading ->
-                    logger.info("成功更新跟单状态: ${copyTrading.id}, enabled=${copyTrading.enabled}")
                     ResponseEntity.ok(ApiResponse.success(copyTrading))
                 },
                 onFailure = { e ->
@@ -119,7 +117,6 @@ class CopyTradingController(
             val result = copyTradingService.deleteCopyTrading(request.copyTradingId)
             result.fold(
                 onSuccess = {
-                    logger.info("成功删除跟单: ${request.copyTradingId}")
                     ResponseEntity.ok(ApiResponse.success(Unit))
                 },
                 onFailure = { e ->

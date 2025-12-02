@@ -30,7 +30,6 @@ class LeaderController(
             val result = leaderService.addLeader(request)
             result.fold(
                 onSuccess = { leader ->
-                    logger.info("成功添加 Leader: ${leader.id}")
                     ResponseEntity.ok(ApiResponse.success(leader))
                 },
                 onFailure = { e ->
@@ -61,7 +60,6 @@ class LeaderController(
             val result = leaderService.updateLeader(request)
             result.fold(
                 onSuccess = { leader ->
-                    logger.info("成功更新 Leader: ${leader.id}")
                     ResponseEntity.ok(ApiResponse.success(leader))
                 },
                 onFailure = { e ->
@@ -91,7 +89,6 @@ class LeaderController(
             val result = leaderService.deleteLeader(request.leaderId)
             result.fold(
                 onSuccess = {
-                    logger.info("成功删除 Leader: ${request.leaderId}")
                     ResponseEntity.ok(ApiResponse.success(Unit))
                 },
                 onFailure = { e ->

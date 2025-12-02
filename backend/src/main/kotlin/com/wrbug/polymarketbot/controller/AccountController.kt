@@ -35,7 +35,6 @@ class AccountController(
             val result = accountService.importAccount(request)
             result.fold(
                 onSuccess = { account ->
-                    logger.info("成功导入账户: ${account.id}")
                     ResponseEntity.ok(ApiResponse.success(account))
                 },
                 onFailure = { e ->
@@ -61,7 +60,6 @@ class AccountController(
             val result = accountService.updateAccount(request)
             result.fold(
                 onSuccess = { account ->
-                    logger.info("成功更新账户: ${account.id}")
                     ResponseEntity.ok(ApiResponse.success(account))
                 },
                 onFailure = { e ->
@@ -87,7 +85,6 @@ class AccountController(
             val result = accountService.deleteAccount(request.accountId)
             result.fold(
                 onSuccess = {
-                    logger.info("成功删除账户: ${request.accountId}")
                     ResponseEntity.ok(ApiResponse.success(Unit))
                 },
                 onFailure = { e ->
@@ -114,7 +111,6 @@ class AccountController(
             val result = accountService.getAccountList()
             result.fold(
                 onSuccess = { response ->
-                    logger.info("成功查询账户列表: ${response.total} 个账户")
                     ResponseEntity.ok(ApiResponse.success(response))
                 },
                 onFailure = { e ->
@@ -137,7 +133,6 @@ class AccountController(
             val result = accountService.getAccountDetail(request.accountId)
             result.fold(
                 onSuccess = { account ->
-                    logger.info("成功查询账户详情: ${account.id}")
                     ResponseEntity.ok(ApiResponse.success(account))
                 },
                 onFailure = { e ->
@@ -163,7 +158,6 @@ class AccountController(
             val result = accountService.getAccountBalance(request.accountId)
             result.fold(
                 onSuccess = { balance ->
-                    logger.info("成功查询账户余额")
                     ResponseEntity.ok(ApiResponse.success(balance))
                 },
                 onFailure = { e ->
@@ -189,7 +183,6 @@ class AccountController(
             val result = accountService.setDefaultAccount(request.accountId)
             result.fold(
                 onSuccess = {
-                    logger.info("成功设置默认账户: ${request.accountId}")
                     ResponseEntity.ok(ApiResponse.success(Unit))
                 },
                 onFailure = { e ->
@@ -216,7 +209,6 @@ class AccountController(
             result.fold(
                 onSuccess = { positionListResponse ->
                     val total = positionListResponse.currentPositions.size + positionListResponse.historyPositions.size
-                    logger.info("成功查询仓位列表: 当前仓位 ${positionListResponse.currentPositions.size} 个，历史仓位 ${positionListResponse.historyPositions.size} 个，共 $total 个")
                     ResponseEntity.ok(ApiResponse.success(positionListResponse))
                 },
                 onFailure = { e ->
@@ -260,7 +252,6 @@ class AccountController(
             val result = runBlocking { accountService.sellPosition(request) }
             result.fold(
                 onSuccess = { response ->
-                    logger.info("成功创建卖出订单: 账户=${request.accountId}, 市场=${request.marketId}, 订单ID=${response.orderId}")
                     ResponseEntity.ok(ApiResponse.success(response))
                 },
                 onFailure = { e ->
@@ -287,7 +278,6 @@ class AccountController(
             val result = runBlocking { accountService.getRedeemablePositionsSummary(request.accountId) }
             result.fold(
                 onSuccess = { summary ->
-                    logger.info("获取可赎回仓位统计成功: 账户=${request.accountId}, 数量=${summary.totalCount}, 价值=${summary.totalValue}")
                     ResponseEntity.ok(ApiResponse.success(summary))
                 },
                 onFailure = { e ->
@@ -331,7 +321,6 @@ class AccountController(
             val result = runBlocking { accountService.redeemPositions(request) }
             result.fold(
                 onSuccess = { response ->
-                    logger.info("成功赎回仓位: 账户数=${response.transactions.size}, 交易数=${response.transactions.size}, 总价值=${response.totalRedeemedValue}")
                     ResponseEntity.ok(ApiResponse.success(response))
                 },
                 onFailure = { e ->

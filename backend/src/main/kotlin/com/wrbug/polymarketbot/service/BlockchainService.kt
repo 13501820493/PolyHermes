@@ -129,7 +129,6 @@ class BlockchainService(
             // 解析代理地址
             val proxyAddress = EthereumUtils.decodeAddress(hexResult)
             
-            logger.debug("获取代理地址成功: 原始地址=$walletAddress, 代理地址=$proxyAddress")
             Result.success(proxyAddress)
         } catch (e: Exception) {
             logger.error("获取代理地址失败: ${e.message}", e)
@@ -158,7 +157,6 @@ class BlockchainService(
                 return Result.failure(IllegalArgumentException("代理地址不能为空"))
             }
             
-            logger.debug("使用代理地址查询余额: $proxyAddress (原始地址: $walletAddress)")
             
             // 使用 RPC 查询 USDC 余额（使用代理地址）
             val balance = queryUsdcBalanceViaRpc(proxyAddress)
@@ -235,7 +233,6 @@ class BlockchainService(
             
             if (response.isSuccessful && response.body() != null) {
                 val positions = response.body()!!
-                logger.debug("查询到 ${positions.size} 个仓位")
                 Result.success(positions)
             } else {
                 val errorMsg = "Data API 请求失败: ${response.code()} ${response.message()}"
@@ -388,7 +385,6 @@ class BlockchainService(
                 } else {
                     0.0
                 }
-                logger.debug("查询到仓位总价值: $totalValue")
                 Result.success(totalValue.toString())
             } else {
                 val errorMsg = "Data API 请求失败: ${response.code()} ${response.message()}"
@@ -452,7 +448,6 @@ class BlockchainService(
             val credentials = org.web3j.crypto.Credentials.create(privateKeyBigInt.toString(16))
             val fromAddress = credentials.address
             
-            logger.debug("赎回仓位: from=$fromAddress, proxy=$proxyAddress, conditionId=$conditionId, indexSets=$indexSets")
             
             // 1. 构建 ConditionalTokens.redeemPositions 的调用数据
             val redeemFunctionSelector = EthereumUtils.getFunctionSelector("redeemPositions(address,bytes32,bytes32,uint256[])")
@@ -638,7 +633,6 @@ class BlockchainService(
             val txHashResult = sendTransaction(rpcApi, transaction)
             txHashResult.fold(
                 onSuccess = { txHash ->
-                    logger.info("赎回仓位交易已发送: txHash=$txHash, from=$fromAddress, proxy=$proxyAddress, conditionId=$conditionId, indexSets=$indexSets")
                     Result.success(txHash)
                 },
                 onFailure = { e ->

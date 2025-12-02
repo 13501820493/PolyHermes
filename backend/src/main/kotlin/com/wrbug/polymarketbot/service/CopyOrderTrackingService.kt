@@ -50,17 +50,14 @@ class CopyOrderTrackingService(
             
             if (existingProcessed != null) {
                 if (existingProcessed.status == "FAILED") {
-                    logger.debug("交易已标记为失败，跳过: leaderId=$leaderId, tradeId=${trade.id}, source=$source")
                     return Result.success(Unit)
                 }
-                logger.debug("交易已处理，跳过: leaderId=$leaderId, tradeId=${trade.id}, source=$source")
                 return Result.success(Unit)
             }
             
             // 检查是否已记录为失败交易
             val failedTrade = failedTradeRepository.findByLeaderIdAndLeaderTradeId(leaderId, trade.id)
             if (failedTrade != null) {
-                logger.debug("交易已记录为失败，跳过: leaderId=$leaderId, tradeId=${trade.id}, source=$source")
                 return Result.success(Unit)
             }
             
@@ -91,17 +88,14 @@ class CopyOrderTrackingService(
                     processedAt = System.currentTimeMillis()
                 )
                 processedTradeRepository.save(processed)
-                logger.info("成功处理交易: leaderId=$leaderId, tradeId=${trade.id}, source=$source, side=${trade.side}")
             } catch (e: DataIntegrityViolationException) {
                 // 唯一约束冲突，说明已经处理过了（可能是并发请求）
                 // 再次检查确认状态
                 val existing = processedTradeRepository.findByLeaderIdAndLeaderTradeId(leaderId, trade.id)
                 if (existing != null) {
                     if (existing.status == "FAILED") {
-                        logger.debug("交易已标记为失败（并发检测）: leaderId=$leaderId, tradeId=${trade.id}")
                         return Result.success(Unit)
                     }
-                    logger.debug("交易已处理（并发检测）: leaderId=$leaderId, tradeId=${trade.id}, source=$source")
                     return Result.success(Unit)
                 } else {
                     // 如果检查不到，说明可能是其他约束冲突，重新抛出异常
@@ -128,7 +122,6 @@ class CopyOrderTrackingService(
             val copyTradings = copyTradingRepository.findByLeaderIdAndEnabledTrue(leaderId)
             
             if (copyTradings.isEmpty()) {
-                logger.debug("没有启用的跟单关系: leaderId=$leaderId")
                 return Result.success(Unit)
             }
             
@@ -151,7 +144,6 @@ class CopyOrderTrackingService(
                     
                     // 验证账户是否启用
                     if (!account.isEnabled) {
-                        logger.debug("账户未启用，跳过创建订单: accountId=${account.id}")
                         continue
                     }
                     
@@ -273,7 +265,6 @@ class CopyOrderTrackingService(
                     )
                     
                     copyOrderTrackingRepository.save(tracking)
-                    logger.info("成功创建买入订单并记录跟踪: copyTradingId=${copyTrading.id}, orderId=$realOrderId, tradeId=${trade.id}, quantity=$finalBuyQuantity, price=$buyPrice")
                 } catch (e: Exception) {
                     logger.error("处理买入交易失败: copyTradingId=${copyTrading.id}, tradeId=${trade.id}", e)
                     // 继续处理下一个跟单关系
@@ -298,7 +289,6 @@ class CopyOrderTrackingService(
             val copyTradings = copyTradingRepository.findByLeaderIdAndEnabledTrue(leaderId)
             
             if (copyTradings.isEmpty()) {
-                logger.debug("没有启用的跟单关系: leaderId=$leaderId")
                 return Result.success(Unit)
             }
             
@@ -311,7 +301,6 @@ class CopyOrderTrackingService(
                     
                     // 检查是否支持卖出
                     if (!template.supportSell) {
-                        logger.debug("模板不支持卖出，跳过: copyTradingId=${copyTrading.id}, templateId=${template.id}")
                         continue
                     }
                     
@@ -377,7 +366,6 @@ class CopyOrderTrackingService(
         
         // 验证账户是否启用
         if (!account.isEnabled) {
-            logger.debug("账户未启用，跳过创建卖出订单: accountId=${account.id}")
             return
         }
         
@@ -399,7 +387,6 @@ class CopyOrderTrackingService(
         )
         
         if (unmatchedOrders.isEmpty()) {
-            logger.debug("没有未匹配的买入订单: copyTradingId=${copyTrading.id}, market=${leaderSellTrade.market}, outcomeIndex=${leaderSellTrade.outcomeIndex}")
             return
         }
         
@@ -440,7 +427,6 @@ class CopyOrderTrackingService(
         }
         
         if (totalMatched.lte(BigDecimal.ZERO)) {
-            logger.debug("没有匹配到任何订单: copyTradingId=${copyTrading.id}, needMatch=$needMatch")
             return
         }
         
@@ -533,7 +519,6 @@ class CopyOrderTrackingService(
                 order.updatedAt = System.currentTimeMillis()
                 copyOrderTrackingRepository.save(order)
                 
-                logger.info("匹配买入订单: copyTradingId=${copyTrading.id}, buyOrderId=${order.buyOrderId}, matchQty=${detail.matchedQuantity}, pnl=${detail.realizedPnl}")
             }
         }
         
@@ -560,7 +545,6 @@ class CopyOrderTrackingService(
             sellMatchDetailRepository.save(savedDetail)
         }
         
-        logger.info("完成卖出匹配并创建订单: copyTradingId=${copyTrading.id}, sellOrderId=$realSellOrderId, totalMatched=$totalMatched, totalPnl=$totalRealizedPnl")
     }
     
     /**

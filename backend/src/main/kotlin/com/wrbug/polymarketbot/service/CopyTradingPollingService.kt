@@ -52,11 +52,8 @@ class CopyTradingPollingService(
      */
     fun start(leaders: List<Leader>) {
         if (!pollingEnabled) {
-            logger.info("轮询监听已禁用，跳过启动")
             return
         }
-        
-        logger.info("启动轮询监听，Leader数量: ${leaders.size}，轮询间隔: ${pollingInterval}ms")
         
         leaders.forEach { leader ->
             addLeader(leader)
@@ -81,7 +78,6 @@ class CopyTradingPollingService(
         cachedTradeIds[leaderId] = mutableSetOf()
         // 首次轮询标志，用于缓存数据而不处理
         isFirstPoll[leaderId] = true
-        logger.info("添加轮询监听: leaderId=$leaderId, address=${leader.leaderAddress}, 首次轮询将只缓存数据")
     }
     
     /**
@@ -91,14 +87,12 @@ class CopyTradingPollingService(
         monitoredLeaders.remove(leaderId)
         cachedTradeIds.remove(leaderId)
         isFirstPoll.remove(leaderId)
-        logger.info("移除轮询监听: leaderId=$leaderId")
     }
     
     /**
      * 停止所有监听
      */
     fun stop() {
-        logger.info("停止所有轮询监听...")
         stopPolling()
         monitoredLeaders.clear()
         cachedTradeIds.clear()
@@ -110,17 +104,14 @@ class CopyTradingPollingService(
      */
     private fun startPolling() {
         if (pollingJob != null && pollingJob!!.isActive) {
-            logger.debug("轮询任务已在运行")
             return
         }
         
         if (monitoredLeaders.isEmpty()) {
-            logger.debug("没有需要监听的Leader，不启动轮询")
             return
         }
         
         pollingJob = scope.launch {
-            logger.info("轮询任务已启动，间隔: ${pollingInterval}ms")
             
             while (isActive) {
                 try {
@@ -235,7 +226,6 @@ class CopyTradingPollingService(
                 cachedIds.addAll(tradeIds)
                 cachedTradeIds[leaderId] = cachedIds
                 
-                logger.info("首次轮询，缓存 ${allTrades.size} 笔交易数据，不进行处理: leaderId=$leaderId")
                 // 标记首次轮询完成
                 isFirstPoll[leaderId] = false
             } else {
@@ -247,7 +237,6 @@ class CopyTradingPollingService(
                     // 找出新增的交易
                     val incrementalTrades = allTrades.filter { it.id in incrementalTradeIds }
                     
-                    logger.debug("通过 diff 发现 ${incrementalTrades.size} 笔新增交易: leaderId=$leaderId")
                     
                     // 处理新增的交易
                     incrementalTrades.forEach { trade ->
@@ -263,9 +252,7 @@ class CopyTradingPollingService(
                     cachedIds.addAll(incrementalTradeIds)
                     cachedTradeIds[leaderId] = cachedIds
                     
-                    logger.debug("已更新缓存，当前缓存 ${cachedIds.size} 笔交易ID: leaderId=$leaderId")
                 } else {
-                    logger.debug("未发现新增交易: leaderId=$leaderId")
                 }
                 
                 // 限制缓存大小，避免内存溢出（只保留最近1000条）
@@ -273,7 +260,6 @@ class CopyTradingPollingService(
                     // 保留最新的1000条（由于查询是按时间戳降序，保留前1000条即可）
                     val sortedTradeIds = allTrades.map { it.id }.take(1000).toSet()
                     cachedTradeIds[leaderId] = sortedTradeIds.toMutableSet()
-                    logger.debug("缓存已满，清理到1000条: leaderId=$leaderId")
                 }
             }
         } catch (e: Exception) {

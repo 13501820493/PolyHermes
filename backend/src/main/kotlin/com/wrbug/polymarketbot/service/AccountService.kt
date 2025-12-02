@@ -60,7 +60,6 @@ class AccountService(
             }
 
             // 4. 自动获取或创建 API Key（必须成功，否则导入失败）
-            logger.info("开始自动获取或创建 API Key: ${request.walletAddress}")
             val apiKeyCreds = runBlocking {
                 val result = apiKeyService.createOrDeriveApiKey(
                     privateKey = request.privateKey,
@@ -71,7 +70,6 @@ class AccountService(
                 if (result.isSuccess) {
                     val creds = result.getOrNull()
                     if (creds != null) {
-                        logger.info("成功自动获取 API Key: ${request.walletAddress}")
                         creds
                     } else {
                         logger.error("自动获取 API Key 返回空值")
@@ -98,7 +96,6 @@ class AccountService(
                 if (proxyResult.isSuccess) {
                     val address = proxyResult.getOrNull()
                     if (address != null) {
-                        logger.info("成功获取代理地址: ${request.walletAddress} -> $address")
                         address
                     } else {
                         logger.error("获取代理地址返回空值")
@@ -127,7 +124,6 @@ class AccountService(
             )
 
             val saved = accountRepository.save(account)
-            logger.info("成功导入账户: ${saved.id}, ${saved.walletAddress}, 代理地址: ${saved.proxyAddress}, 启用状态: ${saved.isEnabled}")
 
             // 刷新订单推送订阅（如果账户启用且有 API 凭证）
             orderPushService.refreshSubscriptions()
@@ -171,7 +167,6 @@ class AccountService(
             )
 
             val saved = accountRepository.save(updated)
-            logger.info("成功更新账户: ${saved.id}, 启用状态: ${saved.isEnabled}")
 
             // 刷新订单推送订阅（账户状态变更时）
             orderPushService.refreshSubscriptions()
@@ -212,7 +207,6 @@ class AccountService(
             }
 
             accountRepository.delete(account)
-            logger.info("成功删除账户: $accountId")
 
             // 刷新订单推送订阅（账户删除时）
             orderPushService.refreshSubscriptions()
@@ -373,7 +367,6 @@ class AccountService(
             val updated = account.copy(isDefault = true, updatedAt = System.currentTimeMillis())
             accountRepository.save(updated)
 
-            logger.info("成功设置默认账户: $accountId")
             Result.success(Unit)
         } catch (e: Exception) {
             logger.error("设置默认账户失败", e)
@@ -807,14 +800,12 @@ class AccountService(
                 account.walletAddress
             )
             
-            logger.info("创建卖出订单: market=${request.marketId}, side=${request.side}, orderType=${request.orderType}, quantity=${request.quantity}, price=$sellPrice, tokenId=$tokenId")
             
             val orderResponse = clobApi.createOrder(newOrderRequest)
             
             if (orderResponse.isSuccessful && orderResponse.body() != null) {
                 val response = orderResponse.body()!!
                 if (response.success) {
-                    logger.info("订单创建成功: orderId=${response.orderId}, transactionsHashes=${response.transactionsHashes}")
                     Result.success(
                         PositionSellResponse(
                             orderId = response.orderId ?: "",
@@ -1067,7 +1058,6 @@ class AccountService(
                     redeemResult.fold(
                         onSuccess = { txHash ->
                             lastTxHash = txHash
-                            logger.info("账户 $accountId 市场 $marketId 赎回成功: txHash=$txHash, indexSets=$indexSets")
                         },
                         onFailure = { e ->
                             logger.error("账户 $accountId 市场 $marketId 赎回失败: ${e.message}", e)
@@ -1115,7 +1105,6 @@ class AccountService(
         return try {
             // 如果账户没有配置 API 凭证，无法查询活跃订单，允许删除
             if (account.apiKey == null || account.apiSecret == null || account.apiPassphrase == null) {
-                logger.debug("账户 ${account.id} 未配置 API 凭证，无法查询活跃订单，允许删除")
                 return false
             }
 
@@ -1139,7 +1128,6 @@ class AccountService(
             if (response.isSuccessful && response.body() != null) {
                 val ordersResponse = response.body()!!
                 val hasOrders = ordersResponse.data.isNotEmpty()
-                logger.debug("账户 ${account.id} 活跃订单检查结果: $hasOrders (订单数: ${ordersResponse.data.size})")
                 hasOrders
             } else {
                 // 如果查询失败（可能是认证失败或网络问题），记录警告但允许删除

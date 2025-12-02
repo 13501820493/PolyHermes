@@ -30,7 +30,6 @@ class CopyTradingTemplateController(
             val result = templateService.createTemplate(request)
             result.fold(
                 onSuccess = { template ->
-                    logger.info("成功创建模板: ${template.id}")
                     ResponseEntity.ok(ApiResponse.success(template))
                 },
                 onFailure = { e ->
@@ -60,7 +59,6 @@ class CopyTradingTemplateController(
             val result = templateService.updateTemplate(request)
             result.fold(
                 onSuccess = { template ->
-                    logger.info("成功更新模板: ${template.id}")
                     ResponseEntity.ok(ApiResponse.success(template))
                 },
                 onFailure = { e ->
@@ -90,7 +88,6 @@ class CopyTradingTemplateController(
             val result = templateService.deleteTemplate(request.templateId)
             result.fold(
                 onSuccess = {
-                    logger.info("成功删除模板: ${request.templateId}")
                     ResponseEntity.ok(ApiResponse.success(Unit))
                 },
                 onFailure = { e ->
@@ -124,7 +121,6 @@ class CopyTradingTemplateController(
             val result = templateService.copyTemplate(request)
             result.fold(
                 onSuccess = { template ->
-                    logger.info("成功复制模板: ${template.id}")
                     ResponseEntity.ok(ApiResponse.success(template))
                 },
                 onFailure = { e ->

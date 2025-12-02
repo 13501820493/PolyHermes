@@ -56,7 +56,6 @@ class LeaderService(
             )
             
             val saved = leaderRepository.save(leader)
-            logger.info("成功添加 Leader: ${saved.id}, ${saved.leaderAddress}")
             
             Result.success(toDto(saved))
         } catch (e: Exception) {
@@ -86,7 +85,6 @@ class LeaderService(
             )
             
             val saved = leaderRepository.save(updated)
-            logger.info("成功更新 Leader: ${saved.id}")
             
             Result.success(toDto(saved))
         } catch (e: Exception) {
@@ -111,7 +109,6 @@ class LeaderService(
             }
             
             leaderRepository.delete(leader)
-            logger.info("成功删除 Leader: $leaderId")
             
             Result.success(Unit)
         } catch (e: Exception) {

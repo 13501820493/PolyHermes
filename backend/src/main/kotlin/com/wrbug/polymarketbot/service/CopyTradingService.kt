@@ -61,7 +61,6 @@ class CopyTradingService(
             )
             
             val saved = copyTradingRepository.save(copyTrading)
-            logger.info("成功创建跟单: ${saved.id}, account=${request.accountId}, template=${request.templateId}, leader=${request.leaderId}")
             
             // 如果跟单已启用，启动Leader监听
             if (saved.enabled) {
@@ -162,7 +161,6 @@ class CopyTradingService(
             )
             
             val saved = copyTradingRepository.save(updated)
-            logger.info("成功更新跟单状态: ${saved.id}, enabled=${saved.enabled}")
             
             // 更新监听状态
             kotlinx.coroutines.runBlocking {
@@ -203,7 +201,6 @@ class CopyTradingService(
             
             val leaderId = copyTrading.leaderId
             copyTradingRepository.delete(copyTrading)
-            logger.info("成功删除跟单: $copyTradingId")
             
             // 移除监听（如果该Leader没有其他启用的跟单关系）
             kotlinx.coroutines.runBlocking {

@@ -33,7 +33,6 @@ class CopyTradingStatisticsController(
             val result = runBlocking { statisticsService.getStatistics(request.copyTradingId) }
             result.fold(
                 onSuccess = { response ->
-                    logger.info("成功获取统计信息: copyTradingId=${request.copyTradingId}")
                     ResponseEntity.ok(ApiResponse.success(response))
                 },
                 onFailure = { e ->
@@ -86,7 +85,6 @@ class CopyOrderTrackingController(
             val result = statisticsService.getOrderList(request)
             result.fold(
                 onSuccess = { response ->
-                    logger.info("成功查询订单列表: copyTradingId=${request.copyTradingId}, type=${request.type}, total=${response.total}")
                     ResponseEntity.ok(ApiResponse.success(response))
                 },
                 onFailure = { e ->

@@ -40,19 +40,16 @@ class UnifiedWebSocketHandler(
     
     @PostConstruct
     fun init() {
-        logger.info("统一 WebSocket 处理器已初始化，心跳超时: ${heartbeatTimeout}ms")
         startCleanupTask()
     }
     
     @PreDestroy
     fun destroy() {
-        logger.info("停止统一 WebSocket 处理器")
         cleanupJob?.cancel()
         scope.cancel()
     }
     
     override fun afterConnectionEstablished(session: WebSocketSession) {
-        logger.info("WebSocket 客户端连接建立: ${session.id}")
         clientSessions[session.id] = session
         lastActivityTime[session.id] = System.currentTimeMillis()
         
@@ -70,7 +67,6 @@ class UnifiedWebSocketHandler(
             lastActivityTime[session.id] = System.currentTimeMillis()
             try {
                 session.sendMessage(TextMessage("PONG"))
-                logger.debug("收到心跳并响应: ${session.id}")
             } catch (e: Exception) {
                 logger.error("发送心跳响应失败: ${session.id}, ${e.message}", e)
             }
@@ -127,7 +123,6 @@ class UnifiedWebSocketHandler(
     }
     
     override fun afterConnectionClosed(session: WebSocketSession, closeStatus: CloseStatus) {
-        logger.info("WebSocket 客户端连接关闭: ${session.id}, 状态: $closeStatus")
         cleanup(session.id)
     }
     
@@ -166,11 +161,9 @@ class UnifiedWebSocketHandler(
                 try {
                     session.close(CloseStatus.NORMAL)
                 } catch (e: Exception) {
-                    logger.debug("关闭会话失败: $sessionId, ${e.message}")
                 }
             }
             
-            logger.info("已清理 WebSocket 资源: $sessionId")
         } catch (e: Exception) {
             logger.error("清理 WebSocket 资源时发生错误: $sessionId, ${e.message}", e)
         }
@@ -212,7 +205,6 @@ class UnifiedWebSocketHandler(
         }
         
         if (inactiveSessions.isNotEmpty()) {
-            logger.info("已清理 ${inactiveSessions.size} 个不活跃连接")
         }
     }
 }

@@ -284,7 +284,24 @@ export const apiService = {
      * 获取分类统计
      */
     category: (data: { category: string; startTime?: number; endTime?: number }) => 
-      apiClient.post<ApiResponse<any>>('/copy-trading/statistics/category', data)
+      apiClient.post<ApiResponse<any>>('/copy-trading/statistics/category', data),
+    
+    /**
+     * 获取跟单关系统计详情
+     */
+    detail: (data: { copyTradingId: number }) => 
+      apiClient.post<ApiResponse<any>>('/copy-trading/statistics/detail', data)
+  },
+  
+  /**
+   * 订单跟踪 API
+   */
+  orderTracking: {
+    /**
+     * 查询订单列表（买入/卖出/匹配）
+     */
+    list: (data: any) => 
+      apiClient.post<ApiResponse<any>>('/copy-trading/orders/tracking', data)
   }
 }
 
