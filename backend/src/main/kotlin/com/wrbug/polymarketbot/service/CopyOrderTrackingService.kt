@@ -465,10 +465,10 @@ class CopyOrderTrackingService(
         // 6. 计算卖出价格（应用价格容忍度）
         val sellPrice = calculateAdjustedPrice(leaderSellTrade.price.toSafeBigDecimal(), template, isBuy = false)
         
-        // 7. 创建并签名卖出订单
-        // 解密私钥
+        // 7. 解密私钥（在方法开始时解密一次，后续复用）
         val decryptedPrivateKey = decryptPrivateKey(account)
         
+        // 8. 创建并签名卖出订单
         val signedOrder = try {
             orderSigningService.createAndSignOrder(
                 privateKey = decryptedPrivateKey,
@@ -487,7 +487,7 @@ class CopyOrderTrackingService(
             return
         }
         
-        // 8. 构建订单请求
+        // 9. 构建订单请求
         // 跟单订单使用 FAK (Fill-And-Kill)，允许部分成交，未成交部分立即取消
         // 这样可以快速响应 Leader 的交易，避免订单长期挂单导致价格不匹配
         val orderRequest = NewOrderRequest(
@@ -497,7 +497,7 @@ class CopyOrderTrackingService(
             deferExec = false
         )
         
-        // 9. 创建带认证的CLOB API客户端
+        // 10. 创建带认证的CLOB API客户端
         val clobApi = retrofitFactory.createClobApi(
             account.apiKey!!,
             account.apiSecret!!,
@@ -505,9 +505,7 @@ class CopyOrderTrackingService(
             account.walletAddress
         )
         
-        // 10. 调用API创建卖出订单（带重试机制，重试时会重新生成salt并重新签名）
-        // 解密私钥
-        val decryptedPrivateKey = decryptPrivateKey(account)
+        // 11. 调用API创建卖出订单（带重试机制，重试时会重新生成salt并重新签名）
         
         val createOrderResult = createOrderWithRetry(
             clobApi = clobApi,
