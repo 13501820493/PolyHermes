@@ -25,9 +25,39 @@ class JwtUtils {
     
     /**
      * 获取签名密钥
+     * 支持十六进制字符串和普通字符串
+     * 确保密钥长度至少 32 字节（256 位）以满足 JWT 规范要求
      */
     private fun getSigningKey(): SecretKey {
-        return Keys.hmacShaKeyFor(secret.toByteArray())
+        val keyBytes = try {
+            // 尝试将密钥作为十六进制字符串解析
+            if (secret.length >= 64 && secret.matches(Regex("^[0-9a-fA-F]+$"))) {
+                // 十六进制字符串，每 2 个字符 = 1 字节
+                // 64 字符 = 32 字节（256 位），符合 JWT 要求
+                secret.chunked(2).map { it.toInt(16).toByte() }.toByteArray()
+            } else {
+                // 普通字符串，使用 UTF-8 编码
+                secret.toByteArray()
+            }
+        } catch (e: Exception) {
+            // 如果解析失败，使用 UTF-8 编码
+            secret.toByteArray()
+        }
+        
+        // 确保密钥长度至少 32 字节（256 位）
+        // 如果密钥长度不够，使用 SHA-256 哈希扩展到 32 字节（更安全）
+        val finalKeyBytes = if (keyBytes.size < 32) {
+            val messageDigest = java.security.MessageDigest.getInstance("SHA-256")
+            messageDigest.update(keyBytes)
+            messageDigest.digest()  // SHA-256 总是返回 32 字节
+        } else if (keyBytes.size > 64) {
+            // 如果太长，截取前 64 字节（支持 HS512，但通常使用 HS256 需要 32 字节）
+            keyBytes.sliceArray(0 until 64)
+        } else {
+            keyBytes
+        }
+        
+        return Keys.hmacShaKeyFor(finalKeyBytes)
     }
     
     /**
