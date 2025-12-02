@@ -37,6 +37,12 @@ class OrderSigningService {
         amount = 4
     )
     
+    // 金额精度限制（根据 Polymarket API 要求）
+    // makerAmount (USDC) 最多 2 位小数
+    // takerAmount (shares) 最多 4 位小数
+    private val MAKER_AMOUNT_DECIMALS = 2  // USDC 金额精度
+    private val TAKER_AMOUNT_DECIMALS = 4  // shares 数量精度
+    
     /**
      * 订单金额计算结果
      */
@@ -77,37 +83,37 @@ class OrderSigningService {
         
         if (side.uppercase() == "BUY") {
             // BUY: makerAmount = price * size (USDC), takerAmount = size (shares)
+            // makerAmount 是 USDC 金额，最多 2 位小数
+            // takerAmount 是 shares 数量，最多 4 位小数
             val rawTakerAmt = roundDown(sizeDecimal, roundConfig.size)
             var rawMakerAmt = rawTakerAmt.multiply(roundedPrice)
             
-            // 确保金额精度
-            if (rawMakerAmt.scale() > roundConfig.amount) {
-                rawMakerAmt = roundUp(rawMakerAmt, roundConfig.amount + 4)
-                if (rawMakerAmt.scale() > roundConfig.amount) {
-                    rawMakerAmt = roundDown(rawMakerAmt, roundConfig.amount)
-                }
-            }
+            // 确保 makerAmount 精度（USDC，最多 2 位小数）
+            rawMakerAmt = roundDown(rawMakerAmt, MAKER_AMOUNT_DECIMALS)
+            
+            // 确保 takerAmount 精度（shares，最多 4 位小数）
+            val finalTakerAmt = roundDown(rawTakerAmt, TAKER_AMOUNT_DECIMALS)
             
             // 转换为 wei（6 位小数）
             val makerAmount = parseUnits(rawMakerAmt, COLLATERAL_TOKEN_DECIMALS)
-            val takerAmount = parseUnits(rawTakerAmt, COLLATERAL_TOKEN_DECIMALS)
+            val takerAmount = parseUnits(finalTakerAmt, COLLATERAL_TOKEN_DECIMALS)
             
             return OrderAmounts(makerAmount.toString(), takerAmount.toString())
         } else {
             // SELL: makerAmount = size (shares), takerAmount = price * size (USDC)
+            // makerAmount 是 shares 数量，最多 4 位小数
+            // takerAmount 是 USDC 金额，最多 2 位小数
             val rawMakerAmt = roundDown(sizeDecimal, roundConfig.size)
             var rawTakerAmt = rawMakerAmt.multiply(roundedPrice)
             
-            // 确保金额精度
-            if (rawTakerAmt.scale() > roundConfig.amount) {
-                rawTakerAmt = roundUp(rawTakerAmt, roundConfig.amount + 4)
-                if (rawTakerAmt.scale() > roundConfig.amount) {
-                    rawTakerAmt = roundDown(rawTakerAmt, roundConfig.amount)
-                }
-            }
+            // 确保 makerAmount 精度（shares，最多 4 位小数）
+            val finalMakerAmt = roundDown(rawMakerAmt, TAKER_AMOUNT_DECIMALS)
+            
+            // 确保 takerAmount 精度（USDC，最多 2 位小数）
+            rawTakerAmt = roundDown(rawTakerAmt, MAKER_AMOUNT_DECIMALS)
             
             // 转换为 wei（6 位小数）
-            val makerAmount = parseUnits(rawMakerAmt, COLLATERAL_TOKEN_DECIMALS)
+            val makerAmount = parseUnits(finalMakerAmt, COLLATERAL_TOKEN_DECIMALS)
             val takerAmount = parseUnits(rawTakerAmt, COLLATERAL_TOKEN_DECIMALS)
             
             return OrderAmounts(makerAmount.toString(), takerAmount.toString())
