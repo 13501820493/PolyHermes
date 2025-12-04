@@ -29,7 +29,6 @@ class CopyTradingStatisticsService(
     private val sellMatchDetailRepository: SellMatchDetailRepository,
     private val accountRepository: AccountRepository,
     private val leaderRepository: LeaderRepository,
-    private val templateRepository: CopyTradingTemplateRepository,
     private val accountService: AccountService
 ) {
     
@@ -47,7 +46,6 @@ class CopyTradingStatisticsService(
             // 2. 获取关联信息
             val account = accountRepository.findById(copyTrading.accountId).orElse(null)
             val leader = leaderRepository.findById(copyTrading.leaderId).orElse(null)
-            val template = templateRepository.findById(copyTrading.templateId).orElse(null)
             
             // 3. 获取买入订单
             val buyOrders = copyOrderTrackingRepository.findByCopyTradingId(copyTradingId)
@@ -74,8 +72,6 @@ class CopyTradingStatisticsService(
                 accountName = account?.accountName,
                 leaderId = copyTrading.leaderId,
                 leaderName = leader?.leaderName,
-                templateId = copyTrading.templateId,
-                templateName = template?.templateName,
                 enabled = copyTrading.enabled,
                 totalBuyQuantity = statistics.totalBuyQuantity,
                 totalBuyOrders = statistics.totalBuyOrders,

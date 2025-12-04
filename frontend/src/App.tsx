@@ -24,10 +24,12 @@ import TemplateAdd from './pages/TemplateAdd'
 import TemplateEdit from './pages/TemplateEdit'
 import CopyTradingList from './pages/CopyTradingList'
 import CopyTradingAdd from './pages/CopyTradingAdd'
+import CopyTradingEdit from './pages/CopyTradingEdit'
 import CopyTradingStatistics from './pages/CopyTradingStatistics'
 import CopyTradingBuyOrders from './pages/CopyTradingBuyOrders'
 import CopyTradingSellOrders from './pages/CopyTradingSellOrders'
 import CopyTradingMatchedOrders from './pages/CopyTradingMatchedOrders'
+import FilteredOrdersList from './pages/FilteredOrdersList'
 import SystemSettings from './pages/SystemSettings'
 import LanguageSettings from './pages/LanguageSettings'
 import ApiHealthStatus from './pages/ApiHealthStatus'
@@ -236,10 +238,12 @@ function App() {
           <Route path="/templates/edit/:id" element={<ProtectedRoute><TemplateEdit /></ProtectedRoute>} />
           <Route path="/copy-trading" element={<ProtectedRoute><CopyTradingList /></ProtectedRoute>} />
           <Route path="/copy-trading/add" element={<ProtectedRoute><CopyTradingAdd /></ProtectedRoute>} />
+          <Route path="/copy-trading/edit/:id" element={<ProtectedRoute><CopyTradingEdit /></ProtectedRoute>} />
           <Route path="/copy-trading/statistics/:copyTradingId" element={<ProtectedRoute><CopyTradingStatistics /></ProtectedRoute>} />
           <Route path="/copy-trading/orders/buy/:copyTradingId" element={<ProtectedRoute><CopyTradingBuyOrders /></ProtectedRoute>} />
           <Route path="/copy-trading/orders/sell/:copyTradingId" element={<ProtectedRoute><CopyTradingSellOrders /></ProtectedRoute>} />
           <Route path="/copy-trading/orders/matched/:copyTradingId" element={<ProtectedRoute><CopyTradingMatchedOrders /></ProtectedRoute>} />
+          <Route path="/copy-trading/filtered-orders/:id" element={<ProtectedRoute><FilteredOrdersList /></ProtectedRoute>} />
           <Route path="/config" element={<ProtectedRoute><ConfigPage /></ProtectedRoute>} />
           <Route path="/positions" element={<ProtectedRoute><PositionList /></ProtectedRoute>} />
           <Route path="/statistics" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />

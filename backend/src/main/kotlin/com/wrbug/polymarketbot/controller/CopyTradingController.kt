@@ -3,6 +3,7 @@ package com.wrbug.polymarketbot.controller
 import com.wrbug.polymarketbot.dto.*
 import com.wrbug.polymarketbot.enums.ErrorCode
 import com.wrbug.polymarketbot.service.CopyTradingService
+import com.wrbug.polymarketbot.service.FilteredOrderService
 import org.slf4j.LoggerFactory
 import org.springframework.context.MessageSource
 import org.springframework.http.ResponseEntity
@@ -15,13 +16,17 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/copy-trading")
 class CopyTradingController(
     private val copyTradingService: CopyTradingService,
+    private val filteredOrderService: FilteredOrderService,
     private val messageSource: MessageSource
 ) {
     
     private val logger = LoggerFactory.getLogger(CopyTradingController::class.java)
     
     /**
-     * 创建跟单
+     * 创建跟单配置
+     * 支持两种方式：
+     * 1. 提供 templateId：从模板填充配置，可以覆盖部分字段
+     * 2. 不提供 templateId：手动输入所有配置参数
      */
     @PostMapping("/create")
     fun createCopyTrading(@RequestBody request: CopyTradingCreateRequest): ResponseEntity<ApiResponse<CopyTradingDto>> {
@@ -29,11 +34,12 @@ class CopyTradingController(
             if (request.accountId <= 0) {
                 return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ACCOUNT_ID_INVALID, messageSource = messageSource))
             }
-            if (request.templateId <= 0) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_TEMPLATE_ID_INVALID, messageSource = messageSource))
-            }
             if (request.leaderId <= 0) {
                 return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_LEADER_ID_INVALID, messageSource = messageSource))
+            }
+            // templateId 现在是可选的，如果提供则必须 > 0
+            if (request.templateId != null && request.templateId <= 0) {
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_TEMPLATE_ID_INVALID, messageSource = messageSource))
             }
             
             val result = copyTradingService.createCopyTrading(request)
@@ -78,7 +84,37 @@ class CopyTradingController(
     }
     
     /**
-     * 更新跟单状态
+     * 更新跟单配置
+     */
+    @PostMapping("/update")
+    fun updateCopyTrading(@RequestBody request: CopyTradingUpdateRequest): ResponseEntity<ApiResponse<CopyTradingDto>> {
+        return try {
+            if (request.copyTradingId <= 0) {
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_COPY_TRADING_ID_INVALID, messageSource = messageSource))
+            }
+            
+            val result = copyTradingService.updateCopyTrading(request)
+            result.fold(
+                onSuccess = { copyTrading ->
+                    ResponseEntity.ok(ApiResponse.success(copyTrading))
+                },
+                onFailure = { e ->
+                    logger.error("更新跟单配置失败: ${e.message}", e)
+                    when (e) {
+                        is IllegalArgumentException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, e.message, messageSource))
+                        is IllegalStateException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.BUSINESS_ERROR, e.message, messageSource))
+                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_UPDATE_FAILED, e.message, messageSource))
+                    }
+                }
+            )
+        } catch (e: Exception) {
+            logger.error("更新跟单配置异常: ${e.message}", e)
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_UPDATE_FAILED, e.message, messageSource))
+        }
+    }
+    
+    /**
+     * 更新跟单状态（兼容旧接口）
      */
     @PostMapping("/update-status")
     fun updateCopyTradingStatus(@RequestBody request: CopyTradingUpdateStatusRequest): ResponseEntity<ApiResponse<CopyTradingDto>> {
@@ -162,6 +198,24 @@ class CopyTradingController(
         } catch (e: Exception) {
             logger.error("查询钱包绑定的模板异常: ${e.message}", e)
             ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_TEMPLATES_FETCH_FAILED, e.message, messageSource))
+        }
+    }
+    
+    /**
+     * 查询被过滤订单列表
+     */
+    @PostMapping("/filtered-orders")
+    fun getFilteredOrders(@RequestBody request: FilteredOrderListRequest): ResponseEntity<ApiResponse<FilteredOrderListResponse>> {
+        return try {
+            if (request.copyTradingId <= 0) {
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_COPY_TRADING_ID_INVALID, messageSource = messageSource))
+            }
+            
+            val response = filteredOrderService.getFilteredOrders(request)
+            ResponseEntity.ok(ApiResponse.success(response))
+        } catch (e: Exception) {
+            logger.error("查询被过滤订单列表异常: ${e.message}", e)
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, e.message, messageSource))
         }
     }
 }

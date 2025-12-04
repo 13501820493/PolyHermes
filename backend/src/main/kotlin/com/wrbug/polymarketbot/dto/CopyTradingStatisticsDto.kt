@@ -9,8 +9,6 @@ data class CopyTradingStatisticsResponse(
     val accountName: String?,
     val leaderId: Long,
     val leaderName: String?,
-    val templateId: Long,
-    val templateName: String?,
     val enabled: Boolean,
     
     // 买入统计

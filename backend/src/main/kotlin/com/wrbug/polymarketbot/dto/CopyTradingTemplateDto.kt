@@ -18,7 +18,11 @@ data class TemplateCreateRequest(
     val useWebSocket: Boolean? = null,
     val websocketReconnectInterval: Int? = null,
     val websocketMaxRetries: Int? = null,
-    val supportSell: Boolean? = null
+    val supportSell: Boolean? = null,
+    // 过滤条件
+    val minOrderDepth: String? = null,  // 最小订单深度（USDC金额），NULL表示不启用
+    val maxSpread: String? = null,  // 最大价差（绝对价格），NULL表示不启用
+    val minOrderbookDepth: String? = null  // 最小订单簿深度（USDC金额），NULL表示不启用
 )
 
 /**
@@ -40,7 +44,11 @@ data class TemplateUpdateRequest(
     val useWebSocket: Boolean? = null,
     val websocketReconnectInterval: Int? = null,
     val websocketMaxRetries: Int? = null,
-    val supportSell: Boolean? = null
+    val supportSell: Boolean? = null,
+    // 过滤条件
+    val minOrderDepth: String? = null,  // 最小订单深度（USDC金额），NULL表示不启用
+    val maxSpread: String? = null,  // 最大价差（绝对价格），NULL表示不启用
+    val minOrderbookDepth: String? = null  // 最小订单簿深度（USDC金额），NULL表示不启用
 )
 
 /**
@@ -69,7 +77,11 @@ data class TemplateCopyRequest(
     val useWebSocket: Boolean? = null,
     val websocketReconnectInterval: Int? = null,
     val websocketMaxRetries: Int? = null,
-    val supportSell: Boolean? = null
+    val supportSell: Boolean? = null,
+    // 过滤条件
+    val minOrderDepth: String? = null,  // 最小订单深度（USDC金额），NULL表示不启用
+    val maxSpread: String? = null,  // 最大价差（绝对价格），NULL表示不启用
+    val minOrderbookDepth: String? = null  // 最小订单簿深度（USDC金额），NULL表示不启用
 )
 
 /**
@@ -99,7 +111,10 @@ data class TemplateDto(
     val websocketReconnectInterval: Int,
     val websocketMaxRetries: Int,
     val supportSell: Boolean,
-    val useCount: Long = 0,  // 使用该模板的跟单数量
+    // 过滤条件
+    val minOrderDepth: String?,
+    val maxSpread: String?,
+    val minOrderbookDepth: String?,
     val createdAt: Long,
     val updatedAt: Long
 )

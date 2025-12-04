@@ -359,19 +359,28 @@ export const apiService = {
    */
   copyTrading: {
     /**
-     * 创建跟单
+     * 创建跟单配置
+     * 支持两种方式：
+     * 1. 提供 templateId：从模板填充配置，可以覆盖部分字段
+     * 2. 不提供 templateId：手动输入所有配置参数
      */
-    create: (data: { accountId: number; templateId: number; leaderId: number; enabled?: boolean }) => 
+    create: (data: any) => 
       apiClient.post<ApiResponse<any>>('/copy-trading/create', data),
+    
+    /**
+     * 更新跟单配置
+     */
+    update: (data: any) => 
+      apiClient.post<ApiResponse<any>>('/copy-trading/update', data),
     
     /**
      * 查询跟单列表
      */
-    list: (data: { accountId?: number; templateId?: number; leaderId?: number; enabled?: boolean } = {}) => 
+    list: (data: { accountId?: number; leaderId?: number; enabled?: boolean } = {}) => 
       apiClient.post<ApiResponse<any>>('/copy-trading/list', data),
     
     /**
-     * 更新跟单状态
+     * 更新跟单状态（兼容旧接口）
      */
     updateStatus: (data: { copyTradingId: number; enabled: boolean }) => 
       apiClient.post<ApiResponse<any>>('/copy-trading/update-status', data),
@@ -383,10 +392,23 @@ export const apiService = {
       apiClient.post<ApiResponse<void>>('/copy-trading/delete', data),
     
     /**
-     * 查询钱包绑定的模板
+     * 查询钱包绑定的跟单配置（兼容旧接口）
      */
     getAccountTemplates: (data: { accountId: number }) => 
-      apiClient.post<ApiResponse<any>>('/copy-trading/account-templates', data)
+      apiClient.post<ApiResponse<any>>('/copy-trading/account-templates', data),
+    
+    /**
+     * 查询被过滤订单列表
+     */
+    getFilteredOrders: (data: {
+      copyTradingId: number
+      filterType?: string
+      page?: number
+      limit?: number
+      startTime?: number
+      endTime?: number
+    }) => 
+      apiClient.post<ApiResponse<any>>('/copy-trading/filtered-orders', data)
   },
   
   /**

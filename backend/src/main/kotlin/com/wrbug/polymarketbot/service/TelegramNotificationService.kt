@@ -185,6 +185,193 @@ class TelegramNotificationService(
     }
 
     /**
+     * 发送订单被过滤通知
+     * @param locale 语言设置（可选，如果提供则使用，否则使用 LocaleContextHolder 获取）
+     */
+    suspend fun sendOrderFilteredNotification(
+        marketTitle: String,
+        marketId: String? = null,  // 市场ID（conditionId），用于生成链接
+        marketSlug: String? = null,  // 市场slug，用于生成链接
+        side: String,
+        outcome: String? = null,  // 市场方向（outcome，如 "YES", "NO" 等）
+        price: String,
+        size: String,
+        filterReason: String,  // 过滤原因
+        filterType: String,  // 过滤类型
+        accountName: String? = null,
+        walletAddress: String? = null,
+        locale: java.util.Locale? = null
+    ) {
+        // 获取语言设置（优先使用传入的 locale，否则从 LocaleContextHolder 获取）
+        val currentLocale = locale ?: try {
+            LocaleContextHolder.getLocale()
+        } catch (e: Exception) {
+            logger.warn("获取语言设置失败，使用默认语言: ${e.message}", e)
+            java.util.Locale("zh", "CN")  // 默认简体中文
+        }
+        
+        // 计算订单金额 = price × size（USDC）
+        val amount = try {
+            val priceDecimal = price.toSafeBigDecimal()
+            val sizeDecimal = size.toSafeBigDecimal()
+            priceDecimal.multiply(sizeDecimal).toString()
+        } catch (e: Exception) {
+            logger.warn("计算订单金额失败: ${e.message}", e)
+            null
+        }
+
+        val message = buildOrderFilteredMessage(
+            marketTitle = marketTitle,
+            marketId = marketId,
+            marketSlug = marketSlug,
+            side = side,
+            outcome = outcome,
+            price = price,
+            size = size,
+            amount = amount,
+            filterReason = filterReason,
+            filterType = filterType,
+            accountName = accountName,
+            walletAddress = walletAddress,
+            locale = currentLocale
+        )
+        sendMessage(message)
+    }
+
+    /**
+     * 构建订单被过滤消息
+     */
+    private fun buildOrderFilteredMessage(
+        marketTitle: String,
+        marketId: String?,
+        marketSlug: String?,
+        side: String,
+        outcome: String?,
+        price: String,
+        size: String,
+        amount: String?,
+        filterReason: String,
+        filterType: String,
+        accountName: String?,
+        walletAddress: String?,
+        locale: java.util.Locale
+    ): String {
+        
+        // 获取多语言文本
+        val orderFiltered = messageSource.getMessage("notification.order.filtered", null, "订单被过滤", locale)
+        val orderInfo = messageSource.getMessage("notification.order.info", null, "订单信息", locale)
+        val marketLabel = messageSource.getMessage("notification.order.market", null, "市场", locale)
+        val sideLabel = messageSource.getMessage("notification.order.side", null, "方向", locale)
+        val outcomeLabel = messageSource.getMessage("notification.order.outcome", null, "市场方向", locale)
+        val priceLabel = messageSource.getMessage("notification.order.price", null, "价格", locale)
+        val quantityLabel = messageSource.getMessage("notification.order.quantity", null, "数量", locale)
+        val amountLabel = messageSource.getMessage("notification.order.amount", null, "金额", locale)
+        val accountLabel = messageSource.getMessage("notification.order.account", null, "账户", locale)
+        val filterReasonLabel = messageSource.getMessage("notification.order.filter_reason", null, "过滤原因", locale)
+        val filterTypeLabel = messageSource.getMessage("notification.order.filter_type", null, "过滤类型", locale)
+        val timeLabel = messageSource.getMessage("notification.order.time", null, "时间", locale)
+        val unknownAccount: String = messageSource.getMessage("notification.order.unknown_account", null, "未知账户", locale) ?: "未知账户"
+        val calculateFailed = messageSource.getMessage("notification.order.calculate_failed", null, "计算失败", locale)
+        
+        // 获取方向的多语言文本
+        val sideDisplay = when (side.uppercase()) {
+            "BUY" -> messageSource.getMessage("notification.order.side.buy", null, "买入", locale)
+            "SELL" -> messageSource.getMessage("notification.order.side.sell", null, "卖出", locale)
+            else -> side
+        }
+        
+        // 获取过滤类型的多语言文本
+        val filterTypeDisplay = when (filterType.uppercase()) {
+            "ORDER_DEPTH" -> messageSource.getMessage("notification.filter.type.order_depth", null, "订单深度不足", locale)
+            "SPREAD" -> messageSource.getMessage("notification.filter.type.spread", null, "价差过大", locale)
+            "ORDERBOOK_DEPTH" -> messageSource.getMessage("notification.filter.type.orderbook_depth", null, "订单簿深度不足", locale)
+            "PRICE_VALIDITY" -> messageSource.getMessage("notification.filter.type.price_validity", null, "价格不合理", locale)
+            "MARKET_STATUS" -> messageSource.getMessage("notification.filter.type.market_status", null, "市场状态不可交易", locale)
+            else -> filterType
+        }
+        
+        // 优先使用账户名称，如果没有账户名称才显示钱包地址
+        val accountInfo: String = when {
+            !accountName.isNullOrBlank() -> {
+                accountName!!
+            }
+            !walletAddress.isNullOrBlank() -> {
+                maskAddress(walletAddress!!)
+            }
+            else -> {
+                unknownAccount
+            }
+        }
+
+        val time = java.text.SimpleDateFormat("yyyy-MM-dd HH:mm:ss").format(java.util.Date())
+
+        // 转义 HTML 特殊字符
+        val escapedMarketTitle = marketTitle.replace("<", "&lt;").replace(">", "&gt;")
+        val escapedAccountInfo = accountInfo.replace("<", "&lt;").replace(">", "&gt;")
+        val escapedFilterReason = filterReason.replace("<", "&lt;").replace(">", "&gt;")
+
+        // 格式化金额显示
+        val amountDisplay = if (amount != null) {
+            try {
+                // 保留最多4位小数，去除尾随零
+                val amountDecimal = amount.toSafeBigDecimal()
+                val formatted = if (amountDecimal.scale() > 4) {
+                    amountDecimal.setScale(4, java.math.RoundingMode.DOWN).stripTrailingZeros()
+                } else {
+                    amountDecimal.stripTrailingZeros()
+                }
+                formatted.toPlainString()
+            } catch (e: Exception) {
+                amount
+            }
+        } else {
+            calculateFailed
+        }
+
+        // 生成市场链接
+        val marketLink = when {
+            !marketSlug.isNullOrBlank() -> {
+                "https://polymarket.com/event/$marketSlug"
+            }
+            !marketId.isNullOrBlank() && marketId.startsWith("0x") -> {
+                "https://polymarket.com/condition/$marketId"
+            }
+            else -> null
+        }
+        
+        val marketDisplay = if (marketLink != null) {
+            "<a href=\"$marketLink\">$escapedMarketTitle</a>"
+        } else {
+            escapedMarketTitle
+        }
+        
+        // 显示市场方向（outcome）
+        val outcomeDisplay = if (!outcome.isNullOrBlank()) {
+            val escapedOutcome = outcome.replace("<", "&lt;").replace(">", "&gt;")
+            "\n• $outcomeLabel: <b>$escapedOutcome</b>"
+        } else {
+            ""
+        }
+
+        return """🚫 <b>$orderFiltered</b>
+
+📊 <b>$orderInfo：</b>
+• $marketLabel: $marketDisplay$outcomeDisplay
+• $sideLabel: <b>$sideDisplay</b>
+• $priceLabel: <code>$price</code>
+• $quantityLabel: <code>$size</code> shares
+• $amountLabel: <code>$amountDisplay</code> USDC
+• $accountLabel: $escapedAccountInfo
+
+⚠️ <b>$filterTypeLabel：</b> <code>$filterTypeDisplay</code>
+
+📝 <b>$filterReasonLabel：</b>
+<code>$escapedFilterReason</code>
+
+⏰ $timeLabel: <code>$time</code>"""
+    }
+
+    /**
      * 发送测试消息
      */
     suspend fun sendTestMessage(message: String = "这是一条测试消息"): Boolean {

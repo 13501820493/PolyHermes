@@ -58,7 +58,10 @@ class CopyTradingTemplateService(
                 useWebSocket = request.useWebSocket ?: true,
                 websocketReconnectInterval = request.websocketReconnectInterval ?: 5000,
                 websocketMaxRetries = request.websocketMaxRetries ?: 10,
-                supportSell = request.supportSell ?: true
+                supportSell = request.supportSell ?: true,
+                minOrderDepth = request.minOrderDepth?.toSafeBigDecimal(),
+                maxSpread = request.maxSpread?.toSafeBigDecimal(),
+                minOrderbookDepth = request.minOrderbookDepth?.toSafeBigDecimal()
             )
             
             val saved = templateRepository.save(template)
@@ -113,6 +116,9 @@ class CopyTradingTemplateService(
                 websocketReconnectInterval = request.websocketReconnectInterval ?: template.websocketReconnectInterval,
                 websocketMaxRetries = request.websocketMaxRetries ?: template.websocketMaxRetries,
                 supportSell = request.supportSell ?: template.supportSell,
+                minOrderDepth = request.minOrderDepth?.toSafeBigDecimal() ?: template.minOrderDepth,
+                maxSpread = request.maxSpread?.toSafeBigDecimal() ?: template.maxSpread,
+                minOrderbookDepth = request.minOrderbookDepth?.toSafeBigDecimal() ?: template.minOrderbookDepth,
                 updatedAt = System.currentTimeMillis()
             )
             
@@ -134,12 +140,7 @@ class CopyTradingTemplateService(
             val template = templateRepository.findById(templateId).orElse(null)
                 ?: return Result.failure(IllegalArgumentException("模板不存在"))
             
-            // 检查是否有跟单正在使用该模板
-            val useCount = copyTradingRepository.countByTemplateId(templateId)
-            if (useCount > 0) {
-                return Result.failure(IllegalStateException("该模板还有 $useCount 个跟单关系在使用，请先删除跟单关系"))
-            }
-            
+            // 模板不再绑定跟单配置，可以直接删除，无需检查使用情况
             templateRepository.delete(template)
             
             Result.success(Unit)
@@ -179,7 +180,10 @@ class CopyTradingTemplateService(
                 useWebSocket = request.useWebSocket ?: sourceTemplate.useWebSocket,
                 websocketReconnectInterval = request.websocketReconnectInterval ?: sourceTemplate.websocketReconnectInterval,
                 websocketMaxRetries = request.websocketMaxRetries ?: sourceTemplate.websocketMaxRetries,
-                supportSell = request.supportSell ?: sourceTemplate.supportSell
+                supportSell = request.supportSell ?: sourceTemplate.supportSell,
+                minOrderDepth = request.minOrderDepth?.toSafeBigDecimal() ?: sourceTemplate.minOrderDepth,
+                maxSpread = request.maxSpread?.toSafeBigDecimal() ?: sourceTemplate.maxSpread,
+                minOrderbookDepth = request.minOrderbookDepth?.toSafeBigDecimal() ?: sourceTemplate.minOrderbookDepth
             )
             
             val saved = templateRepository.save(newTemplate)
@@ -198,8 +202,7 @@ class CopyTradingTemplateService(
         return try {
             val templates = templateRepository.findAllByOrderByCreatedAtDesc()
             val templateDtos = templates.map { template ->
-                val useCount = copyTradingRepository.countByTemplateId(template.id!!)
-                toDto(template, useCount)
+                toDto(template)
             }
             
             Result.success(
@@ -222,8 +225,7 @@ class CopyTradingTemplateService(
             val template = templateRepository.findById(templateId).orElse(null)
                 ?: return Result.failure(IllegalArgumentException("模板不存在"))
             
-            val useCount = copyTradingRepository.countByTemplateId(templateId)
-            Result.success(toDto(template, useCount))
+            Result.success(toDto(template))
         } catch (e: Exception) {
             logger.error("查询模板详情失败", e)
             Result.failure(e)
@@ -233,7 +235,7 @@ class CopyTradingTemplateService(
     /**
      * 转换为 DTO
      */
-    private fun toDto(template: CopyTradingTemplate, useCount: Long = 0): TemplateDto {
+    private fun toDto(template: CopyTradingTemplate): TemplateDto {
         return TemplateDto(
             id = template.id!!,
             templateName = template.templateName,
@@ -251,7 +253,9 @@ class CopyTradingTemplateService(
             websocketReconnectInterval = template.websocketReconnectInterval,
             websocketMaxRetries = template.websocketMaxRetries,
             supportSell = template.supportSell,
-            useCount = useCount,
+            minOrderDepth = template.minOrderDepth?.toPlainString(),
+            maxSpread = template.maxSpread?.toPlainString(),
+            minOrderbookDepth = template.minOrderbookDepth?.toPlainString(),
             createdAt = template.createdAt,
             updatedAt = template.updatedAt
         )

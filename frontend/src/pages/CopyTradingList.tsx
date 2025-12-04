@@ -1,12 +1,12 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Table, Button, Space, Tag, Popconfirm, Switch, message, Select, Dropdown, Divider, Spin } from 'antd'
-import { PlusOutlined, DeleteOutlined, BarChartOutlined, UnorderedListOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons'
+import { PlusOutlined, DeleteOutlined, BarChartOutlined, UnorderedListOutlined, ArrowUpOutlined, ArrowDownOutlined, EditOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import type { MenuProps } from 'antd'
 import { apiService } from '../services/api'
 import { useAccountStore } from '../store/accountStore'
-import type { CopyTrading, Leader, CopyTradingTemplate, CopyTradingStatistics } from '../types'
+import type { CopyTrading, Leader, CopyTradingStatistics } from '../types'
 import { useMediaQuery } from 'react-responsive'
 import { formatUSDC } from '../utils'
 
@@ -19,13 +19,11 @@ const CopyTradingList: React.FC = () => {
   const { accounts, fetchAccounts } = useAccountStore()
   const [copyTradings, setCopyTradings] = useState<CopyTrading[]>([])
   const [leaders, setLeaders] = useState<Leader[]>([])
-  const [templates, setTemplates] = useState<CopyTradingTemplate[]>([])
   const [loading, setLoading] = useState(false)
   const [statisticsMap, setStatisticsMap] = useState<Record<number, CopyTradingStatistics>>({})
   const [loadingStatistics, setLoadingStatistics] = useState<Set<number>>(new Set())
   const [filters, setFilters] = useState<{
     accountId?: number
-    templateId?: number
     leaderId?: number
     enabled?: boolean
   }>({})
@@ -33,7 +31,6 @@ const CopyTradingList: React.FC = () => {
   useEffect(() => {
     fetchAccounts()
     fetchLeaders()
-    fetchTemplates()
     fetchCopyTradings()
   }, [])
   
@@ -49,17 +46,6 @@ const CopyTradingList: React.FC = () => {
       }
     } catch (error: any) {
       console.error('获取 Leader 列表失败:', error)
-    }
-  }
-  
-  const fetchTemplates = async () => {
-    try {
-      const response = await apiService.templates.list()
-      if (response.data.code === 0 && response.data.data) {
-        setTemplates(response.data.data.list || [])
-      }
-    } catch (error: any) {
-      console.error('获取模板列表失败:', error)
     }
   }
   
@@ -179,12 +165,16 @@ const CopyTradingList: React.FC = () => {
       )
     },
     {
-      title: t('copyTradingList.template') || '模板',
-      dataIndex: 'templateName',
-      key: 'templateName',
+      title: t('copyTradingList.copyMode') || '跟单模式',
+      key: 'copyMode',
       width: isMobile ? 100 : 120,
-      render: (text: string) => (
-        <strong style={{ fontSize: isMobile ? 13 : 14 }}>{text}</strong>
+      render: (_: any, record: CopyTrading) => (
+        <Tag color={record.copyMode === 'RATIO' ? 'blue' : 'green'}>
+          {record.copyMode === 'RATIO' 
+            ? `${t('copyTradingList.ratioMode') || '比例'} ${record.copyRatio}x`
+            : `${t('copyTradingList.fixedAmountMode') || '固定'} ${formatUSDC(record.fixedAmount || '0')}`
+          }
+        </Tag>
       )
     },
     {
@@ -266,6 +256,15 @@ const CopyTradingList: React.FC = () => {
       render: (_: any, record: CopyTrading) => {
         const menuItems: MenuProps['items'] = [
           {
+            key: 'edit',
+            label: t('common.edit') || '编辑',
+            icon: <EditOutlined />,
+            onClick: () => navigate(`/copy-trading/edit/${record.id}`)
+          },
+          {
+            type: 'divider'
+          },
+          {
             key: 'statistics',
             label: t('copyTradingList.viewStatistics') || '查看统计',
             icon: <BarChartOutlined />,
@@ -290,6 +289,12 @@ const CopyTradingList: React.FC = () => {
             onClick: () => navigate(`/copy-trading/orders/matched/${record.id}`)
           },
           {
+            key: 'filteredOrders',
+            label: t('copyTradingList.filteredOrders') || '被过滤订单',
+            icon: <UnorderedListOutlined />,
+            onClick: () => navigate(`/copy-trading/filtered-orders/${record.id}`)
+          },
+          {
             type: 'divider'
           },
           {
@@ -312,14 +317,24 @@ const CopyTradingList: React.FC = () => {
         return (
           <Space size={isMobile ? 'small' : 'middle'} wrap>
             {!isMobile && (
-              <Button
-                type="link"
-                size="small"
-                icon={<BarChartOutlined />}
-                onClick={() => navigate(`/copy-trading/statistics/${record.id}`)}
-              >
-                {t('copyTradingList.statistics') || '统计'}
-              </Button>
+              <>
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => navigate(`/copy-trading/edit/${record.id}`)}
+                >
+                  {t('common.edit') || '编辑'}
+                </Button>
+                <Button
+                  type="link"
+                  size="small"
+                  icon={<BarChartOutlined />}
+                  onClick={() => navigate(`/copy-trading/statistics/${record.id}`)}
+                >
+                  {t('copyTradingList.statistics') || '统计'}
+                </Button>
+              </>
             )}
             <Dropdown menu={{ items: menuItems }} trigger={['click']}>
               <Button
@@ -378,20 +393,6 @@ const CopyTradingList: React.FC = () => {
             {accounts.map(account => (
               <Option key={account.id} value={account.id}>
                 {account.accountName || `${t('copyTradingList.account') || '账户'} ${account.id}`}
-              </Option>
-            ))}
-          </Select>
-          
-          <Select
-            placeholder={t('copyTradingList.filterTemplate') || '筛选模板'}
-            allowClear
-            style={{ width: isMobile ? '100%' : 200 }}
-            value={filters.templateId}
-            onChange={(value) => setFilters({ ...filters, templateId: value || undefined })}
-          >
-            {templates.map(template => (
-              <Option key={template.id} value={template.id}>
-                {template.templateName}
               </Option>
             ))}
           </Select>
@@ -464,7 +465,10 @@ const CopyTradingList: React.FC = () => {
                           marginBottom: '8px',
                           color: '#1890ff'
                         }}>
-                          {record.templateName}
+                          {record.copyMode === 'RATIO' 
+                            ? `${t('copyTradingList.ratioMode') || '比例'} ${record.copyRatio}x`
+                            : `${t('copyTradingList.fixedAmountMode') || '固定'} ${formatUSDC(record.fixedAmount || '0')}`
+                          }
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center', justifyContent: 'space-between' }}>
                           <Tag color={record.enabled ? 'green' : 'red'}>

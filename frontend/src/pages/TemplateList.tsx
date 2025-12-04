@@ -182,12 +182,6 @@ const TemplateList: React.FC = () => {
       )
     },
     {
-      title: t('templateList.useCount') || '使用次数',
-      dataIndex: 'useCount',
-      key: 'useCount',
-      render: (count: number) => <Tag>{count}</Tag>
-    },
-    {
       title: t('common.createdAt') || '创建时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
@@ -321,7 +315,6 @@ const TemplateList: React.FC = () => {
                           <Tag color={template.supportSell ? 'green' : 'red'}>
                             {template.supportSell ? (t('templateList.supportSell') || '跟单卖出') : (t('templateList.notSupportSell') || '不跟单卖出')}
                           </Tag>
-                          <Tag>{template.useCount} {t('templateList.timesUsed') || '次使用'}</Tag>
                         </div>
                       </div>
                       

@@ -59,6 +59,16 @@ data class CopyTradingTemplate(
     @Column(name = "support_sell", nullable = false)
     val supportSell: Boolean = true,  // 是否支持跟单卖出
     
+    // 过滤条件字段
+    @Column(name = "min_order_depth", precision = 20, scale = 8)
+    val minOrderDepth: BigDecimal? = null,  // 最小订单深度（USDC金额），NULL表示不启用
+    
+    @Column(name = "max_spread", precision = 20, scale = 8)
+    val maxSpread: BigDecimal? = null,  // 最大价差（绝对价格），NULL表示不启用
+    
+    @Column(name = "min_orderbook_depth", precision = 20, scale = 8)
+    val minOrderbookDepth: BigDecimal? = null,  // 最小订单簿深度（USDC金额），NULL表示不启用
+    
     @Column(name = "created_at", nullable = false)
     val createdAt: Long = System.currentTimeMillis(),
     

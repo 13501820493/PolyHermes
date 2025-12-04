@@ -16,26 +16,15 @@ interface CopyTradingRepository : JpaRepository<CopyTrading, Long> {
     fun findByAccountId(accountId: Long): List<CopyTrading>
     
     /**
-     * 根据模板ID查找跟单列表
-     */
-    fun findByTemplateId(templateId: Long): List<CopyTrading>
-    
-    /**
      * 根据 Leader ID 查找跟单列表
      */
     fun findByLeaderId(leaderId: Long): List<CopyTrading>
     
     /**
-     * 根据账户ID和模板ID查找跟单列表
+     * 根据账户ID和Leader ID查找跟单
      */
-    fun findByAccountIdAndTemplateId(accountId: Long, templateId: Long): List<CopyTrading>
-    
-    /**
-     * 根据账户ID、模板ID和Leader ID查找跟单
-     */
-    fun findByAccountIdAndTemplateIdAndLeaderId(
+    fun findByAccountIdAndLeaderId(
         accountId: Long,
-        templateId: Long,
         leaderId: Long
     ): CopyTrading?
     
@@ -53,11 +42,6 @@ interface CopyTradingRepository : JpaRepository<CopyTrading, Long> {
      * 根据Leader ID查找启用的跟单
      */
     fun findByLeaderIdAndEnabledTrue(leaderId: Long): List<CopyTrading>
-    
-    /**
-     * 统计使用指定模板的跟单数量
-     */
-    fun countByTemplateId(templateId: Long): Long
     
     /**
      * 统计指定 Leader 的跟单数量

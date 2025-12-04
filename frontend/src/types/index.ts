@@ -107,7 +107,10 @@ export interface CopyTradingTemplate {
   maxDailyOrders: number
   priceTolerance: string
   supportSell: boolean
-  useCount: number
+  // 过滤条件
+  minOrderDepth?: string
+  maxSpread?: string
+  minOrderbookDepth?: string
   createdAt: number
   updatedAt: number
 }
@@ -168,19 +171,36 @@ export interface TemplateCopyRequest {
 }
 
 /**
- * 跟单关系（钱包-模板关联）
+ * 跟单配置（独立配置，不再绑定模板）
  */
 export interface CopyTrading {
   id: number
   accountId: number
   accountName?: string
   walletAddress: string
-  templateId: number
-  templateName: string
   leaderId: number
   leaderName?: string
   leaderAddress: string
   enabled: boolean
+  // 跟单配置参数
+  copyMode: 'RATIO' | 'FIXED'
+  copyRatio: string
+  fixedAmount?: string
+  maxOrderSize: string
+  minOrderSize: string
+  maxDailyLoss: string
+  maxDailyOrders: number
+  priceTolerance: string
+  delaySeconds: number
+  pollIntervalSeconds: number
+  useWebSocket: boolean
+  websocketReconnectInterval: number
+  websocketMaxRetries: number
+  supportSell: boolean
+  // 过滤条件
+  minOrderDepth?: string
+  maxSpread?: string
+  minOrderbookDepth?: string
   createdAt: number
   updatedAt: number
 }
@@ -195,12 +215,58 @@ export interface CopyTradingListResponse {
 
 /**
  * 跟单创建请求
+ * 所有配置参数都需要手动输入，模板仅用于前端快速填充表单
  */
 export interface CopyTradingCreateRequest {
   accountId: number
-  templateId: number
   leaderId: number
   enabled?: boolean
+  // 跟单配置参数
+  copyMode?: 'RATIO' | 'FIXED'
+  copyRatio?: string
+  fixedAmount?: string
+  maxOrderSize?: string
+  minOrderSize?: string
+  maxDailyLoss?: string
+  maxDailyOrders?: number
+  priceTolerance?: string
+  delaySeconds?: number
+  pollIntervalSeconds?: number
+  useWebSocket?: boolean
+  websocketReconnectInterval?: number
+  websocketMaxRetries?: number
+  supportSell?: boolean
+  // 过滤条件
+  minOrderDepth?: string
+  maxSpread?: string
+  minOrderbookDepth?: string
+}
+
+/**
+ * 跟单更新请求
+ */
+export interface CopyTradingUpdateRequest {
+  copyTradingId: number
+  enabled?: boolean
+  // 跟单配置参数（可选，只更新提供的字段）
+  copyMode?: 'RATIO' | 'FIXED'
+  copyRatio?: string
+  fixedAmount?: string
+  maxOrderSize?: string
+  minOrderSize?: string
+  maxDailyLoss?: string
+  maxDailyOrders?: number
+  priceTolerance?: string
+  delaySeconds?: number
+  pollIntervalSeconds?: number
+  useWebSocket?: boolean
+  websocketReconnectInterval?: number
+  websocketMaxRetries?: number
+  supportSell?: boolean
+  // 过滤条件
+  minOrderDepth?: string
+  maxSpread?: string
+  minOrderbookDepth?: string
 }
 
 /**
@@ -598,6 +664,53 @@ export interface OrderTrackingRequest {
   status?: string
   sellOrderId?: string
   buyOrderId?: string
+}
+
+/**
+ * 被过滤订单信息
+ */
+export interface FilteredOrder {
+  id: number
+  copyTradingId: number
+  accountId: number
+  accountName?: string
+  leaderId: number
+  leaderName?: string
+  leaderTradeId: string
+  marketId: string
+  marketTitle?: string
+  marketSlug?: string
+  side: 'BUY' | 'SELL'
+  outcomeIndex?: number
+  outcome?: string
+  price: string
+  size: string
+  calculatedQuantity?: string
+  filterReason: string
+  filterType: string
+  createdAt: number
+}
+
+/**
+ * 被过滤订单列表请求
+ */
+export interface FilteredOrderListRequest {
+  copyTradingId: number
+  filterType?: string
+  page?: number
+  limit?: number
+  startTime?: number
+  endTime?: number
+}
+
+/**
+ * 被过滤订单列表响应
+ */
+export interface FilteredOrderListResponse {
+  list: FilteredOrder[]
+  total: number
+  page: number
+  limit: number
 }
 
 /**

@@ -6,12 +6,14 @@ import com.wrbug.polymarketbot.repository.AccountRepository
 import com.wrbug.polymarketbot.repository.CopyTradingRepository
 import com.wrbug.polymarketbot.repository.CopyTradingTemplateRepository
 import com.wrbug.polymarketbot.repository.LeaderRepository
+import com.wrbug.polymarketbot.util.toSafeBigDecimal
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.math.BigDecimal
 
 /**
- * 跟单配置管理服务（钱包-模板关联）
+ * 跟单配置管理服务（独立配置，不再绑定模板）
  */
 @Service
 class CopyTradingService(
@@ -25,7 +27,10 @@ class CopyTradingService(
     private val logger = LoggerFactory.getLogger(CopyTradingService::class.java)
     
     /**
-     * 创建跟单
+     * 创建跟单配置
+     * 支持两种方式：
+     * 1. 提供 templateId：从模板填充配置，可以覆盖部分字段
+     * 2. 不提供 templateId：手动输入所有配置参数
      */
     @Transactional
     fun createCopyTrading(request: CopyTradingCreateRequest): Result<CopyTradingDto> {
@@ -34,30 +39,94 @@ class CopyTradingService(
             val account = accountRepository.findById(request.accountId).orElse(null)
                 ?: return Result.failure(IllegalArgumentException("账户不存在"))
             
-            // 2. 验证模板是否存在
-            val template = templateRepository.findById(request.templateId).orElse(null)
-                ?: return Result.failure(IllegalArgumentException("模板不存在"))
-            
-            // 3. 验证 Leader 是否存在
+            // 2. 验证 Leader 是否存在
             val leader = leaderRepository.findById(request.leaderId).orElse(null)
                 ?: return Result.failure(IllegalArgumentException("Leader 不存在"))
             
-            // 4. 检查是否已存在相同的跟单关系
-            val existing = copyTradingRepository.findByAccountIdAndTemplateIdAndLeaderId(
+            // 3. 检查是否已存在相同的跟单关系（accountId + leaderId）
+            val existing = copyTradingRepository.findByAccountIdAndLeaderId(
                 request.accountId,
-                request.templateId,
                 request.leaderId
             )
             if (existing != null) {
                 return Result.failure(IllegalArgumentException("该跟单关系已存在"))
             }
             
-            // 5. 创建跟单关系
+            // 4. 获取配置参数（从模板填充或手动输入）
+            val config = if (request.templateId != null) {
+                // 从模板填充
+                val template = templateRepository.findById(request.templateId).orElse(null)
+                    ?: return Result.failure(IllegalArgumentException("模板不存在"))
+                
+                // 使用模板值，但允许请求中的字段覆盖
+                CopyTradingConfig(
+                    copyMode = request.copyMode ?: template.copyMode,
+                    copyRatio = request.copyRatio?.toSafeBigDecimal() ?: template.copyRatio,
+                    fixedAmount = request.fixedAmount?.toSafeBigDecimal() ?: template.fixedAmount,
+                    maxOrderSize = request.maxOrderSize?.toSafeBigDecimal() ?: template.maxOrderSize,
+                    minOrderSize = request.minOrderSize?.toSafeBigDecimal() ?: template.minOrderSize,
+                    maxDailyLoss = request.maxDailyLoss?.toSafeBigDecimal() ?: template.maxDailyLoss,
+                    maxDailyOrders = request.maxDailyOrders ?: template.maxDailyOrders,
+                    priceTolerance = request.priceTolerance?.toSafeBigDecimal() ?: template.priceTolerance,
+                    delaySeconds = request.delaySeconds ?: template.delaySeconds,
+                    pollIntervalSeconds = request.pollIntervalSeconds ?: template.pollIntervalSeconds,
+                    useWebSocket = request.useWebSocket ?: template.useWebSocket,
+                    websocketReconnectInterval = request.websocketReconnectInterval ?: template.websocketReconnectInterval,
+                    websocketMaxRetries = request.websocketMaxRetries ?: template.websocketMaxRetries,
+                    supportSell = request.supportSell ?: template.supportSell,
+                    minOrderDepth = request.minOrderDepth?.toSafeBigDecimal() ?: template.minOrderDepth,
+                    maxSpread = request.maxSpread?.toSafeBigDecimal() ?: template.maxSpread,
+                    minOrderbookDepth = request.minOrderbookDepth?.toSafeBigDecimal() ?: template.minOrderbookDepth
+                )
+            } else {
+                // 手动输入（所有字段必须提供）
+                if (request.copyMode == null) {
+                    return Result.failure(IllegalArgumentException("copyMode 不能为空"))
+                }
+                
+                CopyTradingConfig(
+                    copyMode = request.copyMode,
+                    copyRatio = request.copyRatio?.toSafeBigDecimal() ?: BigDecimal.ONE,
+                    fixedAmount = request.fixedAmount?.toSafeBigDecimal(),
+                    maxOrderSize = request.maxOrderSize?.toSafeBigDecimal() ?: "1000".toSafeBigDecimal(),
+                    minOrderSize = request.minOrderSize?.toSafeBigDecimal() ?: "1".toSafeBigDecimal(),
+                    maxDailyLoss = request.maxDailyLoss?.toSafeBigDecimal() ?: "10000".toSafeBigDecimal(),
+                    maxDailyOrders = request.maxDailyOrders ?: 100,
+                    priceTolerance = request.priceTolerance?.toSafeBigDecimal() ?: "5".toSafeBigDecimal(),
+                    delaySeconds = request.delaySeconds ?: 0,
+                    pollIntervalSeconds = request.pollIntervalSeconds ?: 5,
+                    useWebSocket = request.useWebSocket ?: true,
+                    websocketReconnectInterval = request.websocketReconnectInterval ?: 5000,
+                    websocketMaxRetries = request.websocketMaxRetries ?: 10,
+                    supportSell = request.supportSell ?: true,
+                    minOrderDepth = request.minOrderDepth?.toSafeBigDecimal(),
+                    maxSpread = request.maxSpread?.toSafeBigDecimal(),
+                    minOrderbookDepth = request.minOrderbookDepth?.toSafeBigDecimal()
+                )
+            }
+            
+            // 5. 创建跟单配置
             val copyTrading = CopyTrading(
                 accountId = request.accountId,
-                templateId = request.templateId,
                 leaderId = request.leaderId,
-                enabled = request.enabled
+                enabled = request.enabled,
+                copyMode = config.copyMode,
+                copyRatio = config.copyRatio,
+                fixedAmount = config.fixedAmount,
+                maxOrderSize = config.maxOrderSize,
+                minOrderSize = config.minOrderSize,
+                maxDailyLoss = config.maxDailyLoss,
+                maxDailyOrders = config.maxDailyOrders,
+                priceTolerance = config.priceTolerance,
+                delaySeconds = config.delaySeconds,
+                pollIntervalSeconds = config.pollIntervalSeconds,
+                useWebSocket = config.useWebSocket,
+                websocketReconnectInterval = config.websocketReconnectInterval,
+                websocketMaxRetries = config.websocketMaxRetries,
+                supportSell = config.supportSell,
+                minOrderDepth = config.minOrderDepth,
+                maxSpread = config.maxSpread,
+                minOrderbookDepth = config.minOrderbookDepth
             )
             
             val saved = copyTradingRepository.save(copyTrading)
@@ -73,11 +142,81 @@ class CopyTradingService(
                 }
             }
             
-            Result.success(toDto(saved, account, template, leader))
+            Result.success(toDto(saved, account, leader))
         } catch (e: Exception) {
             logger.error("创建跟单失败", e)
             Result.failure(e)
         }
+    }
+    
+    /**
+     * 更新跟单配置
+     */
+    @Transactional
+    fun updateCopyTrading(request: CopyTradingUpdateRequest): Result<CopyTradingDto> {
+        return try {
+            val copyTrading = copyTradingRepository.findById(request.copyTradingId).orElse(null)
+                ?: return Result.failure(IllegalArgumentException("跟单配置不存在"))
+            
+            // 更新字段（只更新提供的字段）
+            val updated = copyTrading.copy(
+                enabled = request.enabled ?: copyTrading.enabled,
+                copyMode = request.copyMode ?: copyTrading.copyMode,
+                copyRatio = request.copyRatio?.toSafeBigDecimal() ?: copyTrading.copyRatio,
+                fixedAmount = request.fixedAmount?.toSafeBigDecimal() ?: copyTrading.fixedAmount,
+                maxOrderSize = request.maxOrderSize?.toSafeBigDecimal() ?: copyTrading.maxOrderSize,
+                minOrderSize = request.minOrderSize?.toSafeBigDecimal() ?: copyTrading.minOrderSize,
+                maxDailyLoss = request.maxDailyLoss?.toSafeBigDecimal() ?: copyTrading.maxDailyLoss,
+                maxDailyOrders = request.maxDailyOrders ?: copyTrading.maxDailyOrders,
+                priceTolerance = request.priceTolerance?.toSafeBigDecimal() ?: copyTrading.priceTolerance,
+                delaySeconds = request.delaySeconds ?: copyTrading.delaySeconds,
+                pollIntervalSeconds = request.pollIntervalSeconds ?: copyTrading.pollIntervalSeconds,
+                useWebSocket = request.useWebSocket ?: copyTrading.useWebSocket,
+                websocketReconnectInterval = request.websocketReconnectInterval ?: copyTrading.websocketReconnectInterval,
+                websocketMaxRetries = request.websocketMaxRetries ?: copyTrading.websocketMaxRetries,
+                supportSell = request.supportSell ?: copyTrading.supportSell,
+                minOrderDepth = request.minOrderDepth?.toSafeBigDecimal() ?: copyTrading.minOrderDepth,
+                maxSpread = request.maxSpread?.toSafeBigDecimal() ?: copyTrading.maxSpread,
+                minOrderbookDepth = request.minOrderbookDepth?.toSafeBigDecimal() ?: copyTrading.minOrderbookDepth,
+                updatedAt = System.currentTimeMillis()
+            )
+            
+            val saved = copyTradingRepository.save(updated)
+            
+            // 重新启动监听（确保状态完全同步）
+            kotlinx.coroutines.runBlocking {
+                try {
+                    monitorService.restartMonitoring()
+                } catch (e: Exception) {
+                    logger.error("重新启动跟单监听失败", e)
+                }
+            }
+            
+            val account = accountRepository.findById(saved.accountId).orElse(null)
+            val leader = leaderRepository.findById(saved.leaderId).orElse(null)
+            
+            if (account == null || leader == null) {
+                return Result.failure(IllegalStateException("跟单配置数据不完整"))
+            }
+            
+            Result.success(toDto(saved, account, leader))
+        } catch (e: Exception) {
+            logger.error("更新跟单配置失败", e)
+            Result.failure(e)
+        }
+    }
+    
+    /**
+     * 更新跟单状态（兼容旧接口）
+     */
+    @Transactional
+    fun updateCopyTradingStatus(request: CopyTradingUpdateStatusRequest): Result<CopyTradingDto> {
+        return updateCopyTrading(
+            CopyTradingUpdateRequest(
+                copyTradingId = request.copyTradingId,
+                enabled = request.enabled
+            )
+        )
     }
     
     /**
@@ -86,22 +225,15 @@ class CopyTradingService(
     fun getCopyTradingList(request: CopyTradingListRequest): Result<CopyTradingListResponse> {
         return try {
             val copyTradings = when {
-                request.accountId != null && request.templateId != null && request.leaderId != null -> {
-                    val found = copyTradingRepository.findByAccountIdAndTemplateIdAndLeaderId(
+                request.accountId != null && request.leaderId != null -> {
+                    val found = copyTradingRepository.findByAccountIdAndLeaderId(
                         request.accountId,
-                        request.templateId,
                         request.leaderId
                     )
                     if (found != null) listOf(found) else emptyList()
                 }
-                request.accountId != null && request.templateId != null -> {
-                    copyTradingRepository.findByAccountIdAndTemplateId(request.accountId, request.templateId)
-                }
                 request.accountId != null -> {
                     copyTradingRepository.findByAccountId(request.accountId)
-                }
-                request.templateId != null -> {
-                    copyTradingRepository.findByTemplateId(request.templateId)
                 }
                 request.leaderId != null -> {
                     copyTradingRepository.findByLeaderId(request.leaderId)
@@ -121,18 +253,17 @@ class CopyTradingService(
                 copyTradings
             }
             
-            val dtos = filtered.map { copyTrading ->
+            val dtos = filtered.mapNotNull { copyTrading ->
                 val account = accountRepository.findById(copyTrading.accountId).orElse(null)
-                val template = templateRepository.findById(copyTrading.templateId).orElse(null)
                 val leader = leaderRepository.findById(copyTrading.leaderId).orElse(null)
                 
-                if (account == null || template == null || leader == null) {
-                    logger.warn("跟单关系数据不完整: ${copyTrading.id}")
+                if (account == null || leader == null) {
+                    logger.warn("跟单配置数据不完整: ${copyTrading.id}")
                     null
                 } else {
-                    toDto(copyTrading, account, template, leader)
+                    toDto(copyTrading, account, leader)
                 }
-            }.filterNotNull()
+            }
             
             Result.success(
                 CopyTradingListResponse(
@@ -147,53 +278,13 @@ class CopyTradingService(
     }
     
     /**
-     * 更新跟单状态
-     */
-    @Transactional
-    fun updateCopyTradingStatus(request: CopyTradingUpdateStatusRequest): Result<CopyTradingDto> {
-        return try {
-            val copyTrading = copyTradingRepository.findById(request.copyTradingId).orElse(null)
-                ?: return Result.failure(IllegalArgumentException("跟单关系不存在"))
-            
-            val updated = copyTrading.copy(
-                enabled = request.enabled,
-                updatedAt = System.currentTimeMillis()
-            )
-            
-            val saved = copyTradingRepository.save(updated)
-            
-            // 重新启动监听（确保状态完全同步）
-            kotlinx.coroutines.runBlocking {
-                try {
-                    monitorService.restartMonitoring()
-                } catch (e: Exception) {
-                    logger.error("重新启动跟单监听失败", e)
-                }
-            }
-            
-            val account = accountRepository.findById(saved.accountId).orElse(null)
-            val template = templateRepository.findById(saved.templateId).orElse(null)
-            val leader = leaderRepository.findById(saved.leaderId).orElse(null)
-            
-            if (account == null || template == null || leader == null) {
-                return Result.failure(IllegalStateException("跟单关系数据不完整"))
-            }
-            
-            Result.success(toDto(saved, account, template, leader))
-        } catch (e: Exception) {
-            logger.error("更新跟单状态失败", e)
-            Result.failure(e)
-        }
-    }
-    
-    /**
      * 删除跟单
      */
     @Transactional
     fun deleteCopyTrading(copyTradingId: Long): Result<Unit> {
         return try {
             val copyTrading = copyTradingRepository.findById(copyTradingId).orElse(null)
-                ?: return Result.failure(IllegalArgumentException("跟单关系不存在"))
+                ?: return Result.failure(IllegalArgumentException("跟单配置不存在"))
             
             copyTradingRepository.delete(copyTrading)
             
@@ -214,7 +305,7 @@ class CopyTradingService(
     }
     
     /**
-     * 查询钱包绑定的模板
+     * 查询钱包绑定的跟单配置（兼容旧接口）
      */
     fun getAccountTemplates(accountId: Long): Result<AccountTemplatesResponse> {
         return try {
@@ -225,16 +316,15 @@ class CopyTradingService(
             val copyTradings = copyTradingRepository.findByAccountId(accountId)
             
             val dtos = copyTradings.mapNotNull { copyTrading ->
-                val template = templateRepository.findById(copyTrading.templateId).orElse(null)
                 val leader = leaderRepository.findById(copyTrading.leaderId).orElse(null)
                 
-                if (template == null || leader == null) {
-                    logger.warn("跟单关系数据不完整: ${copyTrading.id}")
+                if (leader == null) {
+                    logger.warn("跟单配置数据不完整: ${copyTrading.id}")
                     null
                 } else {
                     AccountTemplateDto(
-                        templateId = template.id!!,
-                        templateName = template.templateName,
+                        templateId = null,  // 已废弃
+                        templateName = null,  // 已废弃
                         copyTradingId = copyTrading.id!!,
                         leaderId = leader.id!!,
                         leaderName = leader.leaderName,
@@ -251,7 +341,7 @@ class CopyTradingService(
                 )
             )
         } catch (e: Exception) {
-            logger.error("查询钱包绑定的模板失败", e)
+            logger.error("查询钱包绑定的跟单配置失败", e)
             Result.failure(e)
         }
     }
@@ -262,7 +352,6 @@ class CopyTradingService(
     private fun toDto(
         copyTrading: CopyTrading,
         account: com.wrbug.polymarketbot.entity.Account,
-        template: com.wrbug.polymarketbot.entity.CopyTradingTemplate,
         leader: com.wrbug.polymarketbot.entity.Leader
     ): CopyTradingDto {
         return CopyTradingDto(
@@ -270,15 +359,52 @@ class CopyTradingService(
             accountId = account.id!!,
             accountName = account.accountName,
             walletAddress = account.walletAddress,
-            templateId = template.id!!,
-            templateName = template.templateName,
             leaderId = leader.id!!,
             leaderName = leader.leaderName,
             leaderAddress = leader.leaderAddress,
             enabled = copyTrading.enabled,
+            copyMode = copyTrading.copyMode,
+            copyRatio = copyTrading.copyRatio.toPlainString(),
+            fixedAmount = copyTrading.fixedAmount?.toPlainString(),
+            maxOrderSize = copyTrading.maxOrderSize.toPlainString(),
+            minOrderSize = copyTrading.minOrderSize.toPlainString(),
+            maxDailyLoss = copyTrading.maxDailyLoss.toPlainString(),
+            maxDailyOrders = copyTrading.maxDailyOrders,
+            priceTolerance = copyTrading.priceTolerance.toPlainString(),
+            delaySeconds = copyTrading.delaySeconds,
+            pollIntervalSeconds = copyTrading.pollIntervalSeconds,
+            useWebSocket = copyTrading.useWebSocket,
+            websocketReconnectInterval = copyTrading.websocketReconnectInterval,
+            websocketMaxRetries = copyTrading.websocketMaxRetries,
+            supportSell = copyTrading.supportSell,
+            minOrderDepth = copyTrading.minOrderDepth?.toPlainString(),
+            maxSpread = copyTrading.maxSpread?.toPlainString(),
+            minOrderbookDepth = copyTrading.minOrderbookDepth?.toPlainString(),
             createdAt = copyTrading.createdAt,
             updatedAt = copyTrading.updatedAt
         )
     }
+    
+    /**
+     * 内部配置类（用于构建 CopyTrading 实体）
+     */
+    private data class CopyTradingConfig(
+        val copyMode: String,
+        val copyRatio: BigDecimal,
+        val fixedAmount: BigDecimal?,
+        val maxOrderSize: BigDecimal,
+        val minOrderSize: BigDecimal,
+        val maxDailyLoss: BigDecimal,
+        val maxDailyOrders: Int,
+        val priceTolerance: BigDecimal,
+        val delaySeconds: Int,
+        val pollIntervalSeconds: Int,
+        val useWebSocket: Boolean,
+        val websocketReconnectInterval: Int,
+        val websocketMaxRetries: Int,
+        val supportSell: Boolean,
+        val minOrderDepth: BigDecimal?,
+        val maxSpread: BigDecimal?,
+        val minOrderbookDepth: BigDecimal?
+    )
 }
-

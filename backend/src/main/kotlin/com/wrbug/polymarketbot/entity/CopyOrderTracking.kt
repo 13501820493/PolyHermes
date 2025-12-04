@@ -23,9 +23,6 @@ data class CopyOrderTracking(
     @Column(name = "leader_id", nullable = false)
     val leaderId: Long,
     
-    @Column(name = "template_id", nullable = false)
-    val templateId: Long,
-    
     @Column(name = "market_id", nullable = false, length = 100)
     val marketId: String,
     
