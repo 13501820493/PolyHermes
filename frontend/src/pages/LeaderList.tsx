@@ -2,11 +2,13 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Table, Button, Space, Tag, Popconfirm, message, List, Empty, Spin, Divider } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons'
+import { useTranslation } from 'react-i18next'
 import { apiService } from '../services/api'
 import type { Leader } from '../types'
 import { useMediaQuery } from 'react-responsive'
 
 const LeaderList: React.FC = () => {
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const isMobile = useMediaQuery({ maxWidth: 768 })
   const [leaders, setLeaders] = useState<Leader[]>([])
@@ -23,10 +25,10 @@ const LeaderList: React.FC = () => {
       if (response.data.code === 0 && response.data.data) {
         setLeaders(response.data.data.list || [])
       } else {
-        message.error(response.data.msg || '获取 Leader 列表失败')
+        message.error(response.data.msg || t('leaderList.fetchFailed') || '获取 Leader 列表失败')
       }
     } catch (error: any) {
-      message.error(error.message || '获取 Leader 列表失败')
+      message.error(error.message || t('leaderList.fetchFailed') || '获取 Leader 列表失败')
     } finally {
       setLoading(false)
     }
@@ -36,25 +38,25 @@ const LeaderList: React.FC = () => {
     try {
       const response = await apiService.leaders.delete({ leaderId })
       if (response.data.code === 0) {
-        message.success('删除 Leader 成功')
+        message.success(t('leaderList.deleteSuccess') || '删除 Leader 成功')
         fetchLeaders()
       } else {
-        message.error(response.data.msg || '删除 Leader 失败')
+        message.error(response.data.msg || t('leaderList.deleteFailed') || '删除 Leader 失败')
       }
     } catch (error: any) {
-      message.error(error.message || '删除 Leader 失败')
+      message.error(error.message || t('leaderList.deleteFailed') || '删除 Leader 失败')
     }
   }
   
   const columns = [
     {
-      title: 'Leader 名称',
+      title: t('leaderList.leaderName') || 'Leader 名称',
       dataIndex: 'leaderName',
       key: 'leaderName',
       render: (text: string, record: Leader) => text || `Leader ${record.id}`
     },
     {
-      title: '钱包地址',
+      title: t('leaderList.walletAddress') || '钱包地址',
       dataIndex: 'leaderAddress',
       key: 'leaderAddress',
       render: (address: string) => (
@@ -64,26 +66,26 @@ const LeaderList: React.FC = () => {
       )
     },
     {
-      title: '分类',
+      title: t('leaderList.category') || '分类',
       dataIndex: 'category',
       key: 'category',
       render: (category: string | undefined) => category ? (
         <Tag color={category === 'sports' ? 'blue' : 'green'}>{category}</Tag>
-      ) : <Tag>全部</Tag>
+      ) : <Tag>{t('leaderList.all') || '全部'}</Tag>
     },
     {
-      title: '跟单关系数',
+      title: t('leaderList.copyTradingCount') || '跟单关系数',
       dataIndex: 'copyTradingCount',
       key: 'copyTradingCount',
       render: (count: number) => <Tag>{count}</Tag>
     },
     {
-      title: '创建时间',
+      title: t('leaderList.createdAt') || '创建时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
       render: (timestamp: number) => {
         const date = new Date(timestamp)
-        return date.toLocaleString('zh-CN', {
+        return date.toLocaleString(i18n.language || 'zh-CN', {
           year: 'numeric',
           month: '2-digit',
           day: '2-digit',
@@ -93,7 +95,7 @@ const LeaderList: React.FC = () => {
       }
     },
     {
-      title: '操作',
+      title: t('common.actions') || '操作',
       key: 'action',
       width: isMobile ? 120 : 150,
       render: (_: any, record: Leader) => (
@@ -104,17 +106,17 @@ const LeaderList: React.FC = () => {
             icon={<EditOutlined />}
             onClick={() => navigate(`/leaders/edit?id=${record.id}`)}
           >
-            编辑
+            {t('common.edit') || '编辑'}
           </Button>
           <Popconfirm
-            title="确定要删除这个 Leader 吗？"
-            description={record.copyTradingCount > 0 ? `该 Leader 还有 ${record.copyTradingCount} 个跟单关系，请先删除跟单关系` : undefined}
+            title={t('leaderList.deleteConfirm') || '确定要删除这个 Leader 吗？'}
+            description={record.copyTradingCount > 0 ? t('leaderList.deleteConfirmDesc', { count: record.copyTradingCount }) || `该 Leader 还有 ${record.copyTradingCount} 个跟单关系，请先删除跟单关系` : undefined}
             onConfirm={() => handleDelete(record.id)}
-            okText="确定"
-            cancelText="取消"
+            okText={t('common.confirm') || '确定'}
+            cancelText={t('common.cancel') || '取消'}
           >
             <Button type="link" size="small" danger icon={<DeleteOutlined />}>
-              删除
+              {t('common.delete') || '删除'}
             </Button>
           </Popconfirm>
         </Space>
@@ -132,14 +134,14 @@ const LeaderList: React.FC = () => {
         flexWrap: 'wrap',
         gap: '12px'
       }}>
-        <h2 style={{ margin: 0 }}>Leader 管理</h2>
+        <h2 style={{ margin: 0 }}>{t('leaderList.title') || 'Leader 管理'}</h2>
         <Button
           type="primary"
           icon={<PlusOutlined />}
           onClick={() => navigate('/leaders/add')}
           size={isMobile ? 'middle' : 'large'}
         >
-          添加 Leader
+          {t('leaderList.addLeader') || '添加 Leader'}
         </Button>
       </div>
       
@@ -152,13 +154,13 @@ const LeaderList: React.FC = () => {
                 <Spin size="large" />
               </div>
             ) : leaders.length === 0 ? (
-              <Empty description="暂无 Leader 数据" />
+              <Empty description={t('leaderList.noData') || '暂无 Leader 数据'} />
             ) : (
               <List
                 dataSource={leaders}
                 renderItem={(leader) => {
                   const date = new Date(leader.createdAt)
-                  const formattedDate = date.toLocaleString('zh-CN', {
+                  const formattedDate = date.toLocaleString(i18n.language || 'zh-CN', {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit',
@@ -207,15 +209,15 @@ const LeaderList: React.FC = () => {
                               {leader.category}
                             </Tag>
                           ) : (
-                            <Tag>全部</Tag>
+                            <Tag>{t('leaderList.all') || '全部'}</Tag>
                           )}
-                          <Tag>{leader.copyTradingCount} 个跟单关系</Tag>
+                          <Tag>{t('leaderList.copyTradingRelations', { count: leader.copyTradingCount }) || `${leader.copyTradingCount} 个跟单关系`}</Tag>
                         </div>
                       </div>
                       
                       {/* 创建时间 */}
                       <div style={{ marginBottom: '12px', fontSize: '12px', color: '#999' }}>
-                        创建时间: {formattedDate}
+                        {t('leaderList.createdAt') || '创建时间'}: {formattedDate}
                       </div>
                       
                       {/* 操作按钮 */}
@@ -227,14 +229,14 @@ const LeaderList: React.FC = () => {
                           onClick={() => navigate(`/leaders/edit?id=${leader.id}`)}
                           style={{ flex: 1 }}
                         >
-                          编辑
+                          {t('common.edit') || '编辑'}
                         </Button>
                         <Popconfirm
-                          title="确定要删除这个 Leader 吗？"
-                          description={leader.copyTradingCount > 0 ? `该 Leader 还有 ${leader.copyTradingCount} 个跟单关系，请先删除跟单关系` : undefined}
+                          title={t('leaderList.deleteConfirm') || '确定要删除这个 Leader 吗？'}
+                          description={leader.copyTradingCount > 0 ? t('leaderList.deleteConfirmDesc', { count: leader.copyTradingCount }) || `该 Leader 还有 ${leader.copyTradingCount} 个跟单关系，请先删除跟单关系` : undefined}
                           onConfirm={() => handleDelete(leader.id)}
-                          okText="确定"
-                          cancelText="取消"
+                          okText={t('common.confirm') || '确定'}
+                          cancelText={t('common.cancel') || '取消'}
                         >
                           <Button 
                             type="link" 
@@ -243,7 +245,7 @@ const LeaderList: React.FC = () => {
                             icon={<DeleteOutlined />}
                             style={{ flex: 1 }}
                           >
-                            删除
+                            {t('common.delete') || '删除'}
                           </Button>
                         </Popconfirm>
                       </div>

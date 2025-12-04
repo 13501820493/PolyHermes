@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Table, Button, Space, Tag, Popconfirm, Switch, message, Select, Dropdown, Divider, Spin } from 'antd'
 import { PlusOutlined, DeleteOutlined, BarChartOutlined, UnorderedListOutlined, ArrowUpOutlined, ArrowDownOutlined } from '@ant-design/icons'
+import { useTranslation } from 'react-i18next'
 import type { MenuProps } from 'antd'
 import { apiService } from '../services/api'
 import { useAccountStore } from '../store/accountStore'
@@ -12,6 +13,7 @@ import { formatUSDC } from '../utils'
 const { Option } = Select
 
 const CopyTradingList: React.FC = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const isMobile = useMediaQuery({ maxWidth: 768 })
   const { accounts, fetchAccounts } = useAccountStore()
@@ -73,10 +75,10 @@ const CopyTradingList: React.FC = () => {
           fetchStatistics(ct.id)
         })
       } else {
-        message.error(response.data.msg || '获取跟单列表失败')
+        message.error(response.data.msg || t('copyTradingList.fetchFailed') || '获取跟单列表失败')
       }
     } catch (error: any) {
-      message.error(error.message || '获取跟单列表失败')
+      message.error(error.message || t('copyTradingList.fetchFailed') || '获取跟单列表失败')
     } finally {
       setLoading(false)
     }
@@ -133,13 +135,13 @@ const CopyTradingList: React.FC = () => {
         enabled: !copyTrading.enabled
       })
       if (response.data.code === 0) {
-        message.success(`${copyTrading.enabled ? '停止' : '开启'}跟单成功`)
+        message.success(copyTrading.enabled ? (t('copyTradingList.stopSuccess') || '停止跟单成功') : (t('copyTradingList.startSuccess') || '开启跟单成功'))
         fetchCopyTradings()
       } else {
-        message.error(response.data.msg || '更新跟单状态失败')
+        message.error(response.data.msg || t('copyTradingList.updateStatusFailed') || '更新跟单状态失败')
       }
     } catch (error: any) {
-      message.error(error.message || '更新跟单状态失败')
+      message.error(error.message || t('copyTradingList.updateStatusFailed') || '更新跟单状态失败')
     }
   }
   
@@ -147,25 +149,25 @@ const CopyTradingList: React.FC = () => {
     try {
       const response = await apiService.copyTrading.delete({ copyTradingId })
       if (response.data.code === 0) {
-        message.success('删除跟单成功')
+        message.success(t('copyTradingList.deleteSuccess') || '删除跟单成功')
         fetchCopyTradings()
       } else {
-        message.error(response.data.msg || '删除跟单失败')
+        message.error(response.data.msg || t('copyTradingList.deleteFailed') || '删除跟单失败')
       }
     } catch (error: any) {
-      message.error(error.message || '删除跟单失败')
+      message.error(error.message || t('copyTradingList.deleteFailed') || '删除跟单失败')
     }
   }
   
   const columns = [
     {
-      title: '钱包',
+      title: t('copyTradingList.wallet') || '钱包',
       key: 'account',
       width: isMobile ? 100 : 150,
       render: (_: any, record: CopyTrading) => (
         <div>
           <div style={{ fontSize: isMobile ? 13 : 14, fontWeight: 500 }}>
-            {record.accountName || `账户 ${record.accountId}`}
+            {record.accountName || `${t('copyTradingList.account') || '账户'} ${record.accountId}`}
           </div>
           <div style={{ fontSize: isMobile ? 11 : 12, color: '#999', marginTop: 2 }}>
             {isMobile 
@@ -177,7 +179,7 @@ const CopyTradingList: React.FC = () => {
       )
     },
     {
-      title: '模板',
+      title: t('copyTradingList.template') || '模板',
       dataIndex: 'templateName',
       key: 'templateName',
       width: isMobile ? 100 : 120,
@@ -186,7 +188,7 @@ const CopyTradingList: React.FC = () => {
       )
     },
     {
-      title: 'Leader',
+      title: t('copyTradingList.leader') || 'Leader',
       key: 'leader',
       width: isMobile ? 100 : 150,
       render: (_: any, record: CopyTrading) => (
@@ -204,7 +206,7 @@ const CopyTradingList: React.FC = () => {
       )
     },
     {
-      title: '状态',
+      title: t('common.status') || '状态',
       dataIndex: 'enabled',
       key: 'enabled',
       width: isMobile ? 80 : 100,
@@ -212,20 +214,20 @@ const CopyTradingList: React.FC = () => {
         <Switch
           checked={enabled}
           onChange={() => handleToggleStatus(record)}
-          checkedChildren="开启"
-          unCheckedChildren="停止"
+          checkedChildren={t('copyTradingList.enabled') || '开启'}
+          unCheckedChildren={t('copyTradingList.disabled') || '停止'}
         />
       )
     },
     {
-      title: '总盈亏',
+      title: t('copyTradingList.totalPnl') || '总盈亏',
       key: 'totalPnl',
       width: isMobile ? 100 : 150,
       render: (_: any, record: CopyTrading) => {
         const stats = statisticsMap[record.id]
         if (!stats) {
           return loadingStatistics.has(record.id) ? (
-            <span style={{ fontSize: isMobile ? 11 : 12 }}>加载中...</span>
+            <span style={{ fontSize: isMobile ? 11 : 12 }}>{t('common.loading') || '加载中...'}</span>
           ) : (
             <span style={{ fontSize: isMobile ? 11 : 12 }}>-</span>
           )
@@ -257,7 +259,7 @@ const CopyTradingList: React.FC = () => {
       }
     },
     {
-      title: '操作',
+      title: t('common.actions') || '操作',
       key: 'action',
       width: isMobile ? 100 : 200,
       fixed: 'right' as const,
@@ -265,25 +267,25 @@ const CopyTradingList: React.FC = () => {
         const menuItems: MenuProps['items'] = [
           {
             key: 'statistics',
-            label: '查看统计',
+            label: t('copyTradingList.viewStatistics') || '查看统计',
             icon: <BarChartOutlined />,
             onClick: () => navigate(`/copy-trading/statistics/${record.id}`)
           },
           {
             key: 'buyOrders',
-            label: '买入订单',
+            label: t('copyTradingList.buyOrders') || '买入订单',
             icon: <UnorderedListOutlined />,
             onClick: () => navigate(`/copy-trading/orders/buy/${record.id}`)
           },
           {
             key: 'sellOrders',
-            label: '卖出订单',
+            label: t('copyTradingList.sellOrders') || '卖出订单',
             icon: <UnorderedListOutlined />,
             onClick: () => navigate(`/copy-trading/orders/sell/${record.id}`)
           },
           {
             key: 'matchedOrders',
-            label: '匹配关系',
+            label: t('copyTradingList.matchedOrders') || '匹配关系',
             icon: <UnorderedListOutlined />,
             onClick: () => navigate(`/copy-trading/orders/matched/${record.id}`)
           },
@@ -294,13 +296,13 @@ const CopyTradingList: React.FC = () => {
             key: 'delete',
             label: (
               <Popconfirm
-                title="确定要删除这个跟单关系吗？"
+                title={t('copyTradingList.deleteConfirm') || '确定要删除这个跟单关系吗？'}
                 onConfirm={() => handleDelete(record.id)}
-                okText="确定"
-                cancelText="取消"
+                okText={t('common.confirm') || '确定'}
+                cancelText={t('common.cancel') || '取消'}
                 onCancel={(e) => e?.stopPropagation()}
               >
-                <span style={{ color: '#ff4d4f' }}>删除</span>
+                <span style={{ color: '#ff4d4f' }}>{t('common.delete') || '删除'}</span>
               </Popconfirm>
             ),
             danger: true
@@ -316,7 +318,7 @@ const CopyTradingList: React.FC = () => {
                 icon={<BarChartOutlined />}
                 onClick={() => navigate(`/copy-trading/statistics/${record.id}`)}
               >
-                统计
+                {t('copyTradingList.statistics') || '统计'}
               </Button>
             )}
             <Dropdown menu={{ items: menuItems }} trigger={['click']}>
@@ -325,15 +327,15 @@ const CopyTradingList: React.FC = () => {
                 size="small"
                 icon={<UnorderedListOutlined />}
               >
-                {isMobile ? '' : '订单'}
+                {isMobile ? '' : (t('copyTradingList.orders') || '订单')}
               </Button>
             </Dropdown>
             {!isMobile && (
               <Popconfirm
-                title="确定要删除这个跟单关系吗？"
+                title={t('copyTradingList.deleteConfirm') || '确定要删除这个跟单关系吗？'}
                 onConfirm={() => handleDelete(record.id)}
-                okText="确定"
-                cancelText="取消"
+                okText={t('common.confirm') || '确定'}
+                cancelText={t('common.cancel') || '取消'}
               >
                 <Button
                   type="link"
@@ -341,7 +343,7 @@ const CopyTradingList: React.FC = () => {
                   danger
                   icon={<DeleteOutlined />}
                 >
-                  删除
+                  {t('common.delete') || '删除'}
                 </Button>
               </Popconfirm>
             )}
@@ -355,19 +357,19 @@ const CopyTradingList: React.FC = () => {
     <div>
       <Card>
         <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-          <h2 style={{ margin: 0 }}>跟单配置管理</h2>
+          <h2 style={{ margin: 0 }}>{t('copyTradingList.title') || '跟单配置管理'}</h2>
           <Button
             type="primary"
             icon={<PlusOutlined />}
             onClick={() => navigate('/copy-trading/add')}
           >
-            新增跟单
+            {t('copyTradingList.addCopyTrading') || '新增跟单'}
           </Button>
         </div>
         
         <div style={{ marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
           <Select
-            placeholder="筛选钱包"
+            placeholder={t('copyTradingList.filterWallet') || '筛选钱包'}
             allowClear
             style={{ width: isMobile ? '100%' : 200 }}
             value={filters.accountId}
@@ -375,13 +377,13 @@ const CopyTradingList: React.FC = () => {
           >
             {accounts.map(account => (
               <Option key={account.id} value={account.id}>
-                {account.accountName || `账户 ${account.id}`}
+                {account.accountName || `${t('copyTradingList.account') || '账户'} ${account.id}`}
               </Option>
             ))}
           </Select>
           
           <Select
-            placeholder="筛选模板"
+            placeholder={t('copyTradingList.filterTemplate') || '筛选模板'}
             allowClear
             style={{ width: isMobile ? '100%' : 200 }}
             value={filters.templateId}
@@ -395,7 +397,7 @@ const CopyTradingList: React.FC = () => {
           </Select>
           
           <Select
-            placeholder="筛选 Leader"
+            placeholder={t('copyTradingList.filterLeader') || '筛选 Leader'}
             allowClear
             style={{ width: isMobile ? '100%' : 200 }}
             value={filters.leaderId}

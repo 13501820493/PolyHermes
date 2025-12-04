@@ -4,6 +4,7 @@ import com.wrbug.polymarketbot.dto.*
 import com.wrbug.polymarketbot.enums.ErrorCode
 import com.wrbug.polymarketbot.service.CopyTradingService
 import org.slf4j.LoggerFactory
+import org.springframework.context.MessageSource
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -13,7 +14,8 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/api/copy-trading")
 class CopyTradingController(
-    private val copyTradingService: CopyTradingService
+    private val copyTradingService: CopyTradingService,
+    private val messageSource: MessageSource
 ) {
     
     private val logger = LoggerFactory.getLogger(CopyTradingController::class.java)
@@ -25,13 +27,13 @@ class CopyTradingController(
     fun createCopyTrading(@RequestBody request: CopyTradingCreateRequest): ResponseEntity<ApiResponse<CopyTradingDto>> {
         return try {
             if (request.accountId <= 0) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ACCOUNT_ID_INVALID))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ACCOUNT_ID_INVALID, messageSource = messageSource))
             }
             if (request.templateId <= 0) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_TEMPLATE_ID_INVALID))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_TEMPLATE_ID_INVALID, messageSource = messageSource))
             }
             if (request.leaderId <= 0) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_LEADER_ID_INVALID))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_LEADER_ID_INVALID, messageSource = messageSource))
             }
             
             val result = copyTradingService.createCopyTrading(request)
@@ -42,14 +44,14 @@ class CopyTradingController(
                 onFailure = { e ->
                     logger.error("创建跟单失败: ${e.message}", e)
                     when (e) {
-                        is IllegalArgumentException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, e.message))
-                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_CREATE_FAILED, e.message))
+                        is IllegalArgumentException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, e.message, messageSource))
+                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_CREATE_FAILED, e.message, messageSource))
                     }
                 }
             )
         } catch (e: Exception) {
             logger.error("创建跟单异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_CREATE_FAILED, e.message))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_CREATE_FAILED, e.message, messageSource))
         }
     }
     
@@ -66,12 +68,12 @@ class CopyTradingController(
                 },
                 onFailure = { e ->
                     logger.error("查询跟单列表失败: ${e.message}", e)
-                    ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_LIST_FETCH_FAILED, e.message))
+                    ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_LIST_FETCH_FAILED, e.message, messageSource))
                 }
             )
         } catch (e: Exception) {
             logger.error("查询跟单列表异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_LIST_FETCH_FAILED, e.message))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_LIST_FETCH_FAILED, e.message, messageSource))
         }
     }
     
@@ -82,7 +84,7 @@ class CopyTradingController(
     fun updateCopyTradingStatus(@RequestBody request: CopyTradingUpdateStatusRequest): ResponseEntity<ApiResponse<CopyTradingDto>> {
         return try {
             if (request.copyTradingId <= 0) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_COPY_TRADING_ID_INVALID))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_COPY_TRADING_ID_INVALID, messageSource = messageSource))
             }
             
             val result = copyTradingService.updateCopyTradingStatus(request)
@@ -93,15 +95,15 @@ class CopyTradingController(
                 onFailure = { e ->
                     logger.error("更新跟单状态失败: ${e.message}", e)
                     when (e) {
-                        is IllegalArgumentException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, e.message))
-                        is IllegalStateException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.BUSINESS_ERROR, e.message))
-                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_UPDATE_FAILED, e.message))
+                        is IllegalArgumentException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, e.message, messageSource))
+                        is IllegalStateException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.BUSINESS_ERROR, e.message, messageSource))
+                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_UPDATE_FAILED, e.message, messageSource))
                     }
                 }
             )
         } catch (e: Exception) {
             logger.error("更新跟单状态异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_UPDATE_FAILED, e.message))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_UPDATE_FAILED, e.message, messageSource))
         }
     }
     
@@ -112,7 +114,7 @@ class CopyTradingController(
     fun deleteCopyTrading(@RequestBody request: CopyTradingDeleteRequest): ResponseEntity<ApiResponse<Unit>> {
         return try {
             if (request.copyTradingId <= 0) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_COPY_TRADING_ID_INVALID))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_COPY_TRADING_ID_INVALID, messageSource = messageSource))
             }
             
             val result = copyTradingService.deleteCopyTrading(request.copyTradingId)
@@ -123,14 +125,14 @@ class CopyTradingController(
                 onFailure = { e ->
                     logger.error("删除跟单失败: ${e.message}", e)
                     when (e) {
-                        is IllegalArgumentException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, e.message))
-                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_DELETE_FAILED, e.message))
+                        is IllegalArgumentException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, e.message, messageSource))
+                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_DELETE_FAILED, e.message, messageSource))
                     }
                 }
             )
         } catch (e: Exception) {
             logger.error("删除跟单异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_DELETE_FAILED, e.message))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_DELETE_FAILED, e.message, messageSource))
         }
     }
     
@@ -141,7 +143,7 @@ class CopyTradingController(
     fun getAccountTemplates(@RequestBody request: AccountTemplatesRequest): ResponseEntity<ApiResponse<AccountTemplatesResponse>> {
         return try {
             if (request.accountId <= 0) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ACCOUNT_ID_INVALID))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ACCOUNT_ID_INVALID, messageSource = messageSource))
             }
             
             val result = copyTradingService.getAccountTemplates(request.accountId)
@@ -152,14 +154,14 @@ class CopyTradingController(
                 onFailure = { e ->
                     logger.error("查询钱包绑定的模板失败: ${e.message}", e)
                     when (e) {
-                        is IllegalArgumentException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, e.message))
-                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_TEMPLATES_FETCH_FAILED, e.message))
+                        is IllegalArgumentException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, e.message, messageSource))
+                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_TEMPLATES_FETCH_FAILED, e.message, messageSource))
                     }
                 }
             )
         } catch (e: Exception) {
             logger.error("查询钱包绑定的模板异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_TEMPLATES_FETCH_FAILED, e.message))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_COPY_TRADING_TEMPLATES_FETCH_FAILED, e.message, messageSource))
         }
     }
 }

@@ -2,6 +2,9 @@ import { useEffect, useCallback, useState } from 'react'
 import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { ConfigProvider, notification, Spin } from 'antd'
 import zhCN from 'antd/locale/zh_CN'
+import zhTW from 'antd/locale/zh_TW'
+import enUS from 'antd/locale/en_US'
+import { useTranslation } from 'react-i18next'
 import Layout from './components/Layout'
 import Login from './pages/Login'
 import ResetPassword from './pages/ResetPassword'
@@ -26,6 +29,9 @@ import CopyTradingBuyOrders from './pages/CopyTradingBuyOrders'
 import CopyTradingSellOrders from './pages/CopyTradingSellOrders'
 import CopyTradingMatchedOrders from './pages/CopyTradingMatchedOrders'
 import SystemSettings from './pages/SystemSettings'
+import LanguageSettings from './pages/LanguageSettings'
+import ApiHealthStatus from './pages/ApiHealthStatus'
+import ProxySettings from './pages/ProxySettings'
 import { wsManager } from './services/websocket'
 import type { OrderPushMessage } from './types'
 import { apiService } from './services/api'
@@ -50,23 +56,33 @@ const ProtectedRoute: React.FC<{ children: React.ReactNode }> = ({ children }) =
 }
 
 function App() {
+  const { t, i18n } = useTranslation()
   const [isFirstUse, setIsFirstUse] = useState<boolean | null>(null)
   const [checking, setChecking] = useState(true)
+  
+  // 根据当前语言设置 Ant Design 的 locale
+  const getAntdLocale = () => {
+    const lang = i18n.language || 'en'
+    if (lang.startsWith('zh-CN')) return zhCN
+    if (lang.startsWith('zh-TW') || lang.startsWith('zh-HK')) return zhTW
+    return enUS
+  }
+  
   /**
    * 获取订单类型文本
    */
   const getOrderTypeText = useCallback((type: string): string => {
     switch (type) {
       case 'PLACEMENT':
-        return '订单创建'
+        return t('order.create')
       case 'UPDATE':
-        return '订单更新'
+        return t('order.update')
       case 'CANCELLATION':
-        return '订单取消'
+        return t('order.cancel')
       default:
-        return '订单事件'
+        return t('order.event')
     }
-  }, [])
+  }, [t])
   
   /**
    * 处理订单推送消息，显示全局通知
@@ -76,7 +92,7 @@ function App() {
     
     // 根据订单类型和操作类型确定通知内容
     const orderTypeText = getOrderTypeText(order.type)
-    const sideText = order.side === 'BUY' ? '买入' : '卖出'
+    const sideText = order.side === 'BUY' ? t('order.buy') : t('order.sell')
     
     // 如果有市场名称，在标题中显示
     const marketName = orderDetail?.marketName || order.market.substring(0, 8) + '...'
@@ -89,21 +105,21 @@ function App() {
     const status = orderDetail?.status || 'UNKNOWN'
     
     // 构建描述信息
-    let description = `市场: ${marketName}\n${sideText} ${size} @ ${price}`
+    let description = `${t('order.market')}: ${marketName}\n${sideText} ${size} @ ${price}`
     
     // 如果有订单详情，显示更详细的信息
     if (orderDetail) {
-      description += `\n状态: ${status}`
+      description += `\n${t('order.status')}: ${status}`
       if (parseFloat(filled) > 0) {
-        description += ` | 已成交: ${filled}`
+        description += ` | ${t('order.filled')}: ${filled}`
       }
       const remaining = (parseFloat(size) - parseFloat(filled)).toFixed(2)
       if (parseFloat(remaining) > 0) {
-        description += ` | 剩余: ${remaining}`
+        description += ` | ${t('order.remaining')}: ${remaining}`
       }
     } else if (order.type === 'UPDATE' && parseFloat(order.size_matched) > 0) {
       // 如果没有订单详情，使用 WebSocket 消息中的已成交数量
-      description += `\n已成交: ${filled}`
+      description += `\n${t('order.filled')}: ${filled}`
     }
     
     // 根据订单类型选择通知类型
@@ -136,7 +152,7 @@ function App() {
         }
       } catch (error) {
         console.error('检查首次使用失败:', error)
-        setIsFirstUse(false) // 出错时默认不是首次使用
+        setIsFirstUse(false)
       } finally {
         setChecking(false)
       }
@@ -170,7 +186,7 @@ function App() {
   // 如果正在检查首次使用，显示加载中
   if (checking) {
     return (
-      <ConfigProvider locale={zhCN}>
+      <ConfigProvider locale={getAntdLocale()}>
         <div style={{
           display: 'flex',
           justifyContent: 'center',
@@ -186,7 +202,7 @@ function App() {
   // 如果首次使用，直接跳转到重置密码页面
   if (isFirstUse === true) {
     return (
-      <ConfigProvider locale={zhCN}>
+      <ConfigProvider locale={getAntdLocale()}>
         <BrowserRouter>
           <Routes>
             <Route path="/reset-password" element={<ResetPassword />} />
@@ -198,7 +214,7 @@ function App() {
   }
   
   return (
-    <ConfigProvider locale={zhCN}>
+    <ConfigProvider locale={getAntdLocale()}>
       <BrowserRouter>
         <Routes>
           {/* 公开路由（不需要鉴权） */}
@@ -228,6 +244,9 @@ function App() {
           <Route path="/statistics" element={<ProtectedRoute><Statistics /></ProtectedRoute>} />
           <Route path="/users" element={<ProtectedRoute><UserList /></ProtectedRoute>} />
           <Route path="/system-settings" element={<ProtectedRoute><SystemSettings /></ProtectedRoute>} />
+          <Route path="/system-settings/language" element={<ProtectedRoute><LanguageSettings /></ProtectedRoute>} />
+          <Route path="/system-settings/api-health" element={<ProtectedRoute><ApiHealthStatus /></ProtectedRoute>} />
+          <Route path="/system-settings/proxy" element={<ProtectedRoute><ProxySettings /></ProtectedRoute>} />
           
           {/* 默认重定向到登录页 */}
           <Route path="*" element={<Navigate to="/login" replace />} />

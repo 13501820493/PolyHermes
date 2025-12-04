@@ -5,6 +5,7 @@ import com.wrbug.polymarketbot.enums.ErrorCode
 import com.wrbug.polymarketbot.service.UserService
 import jakarta.servlet.http.HttpServletRequest
 import org.slf4j.LoggerFactory
+import org.springframework.context.MessageSource
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -14,7 +15,8 @@ import org.springframework.web.bind.annotation.*
 @RestController
 @RequestMapping("/api/users")
 class UserController(
-    private val userService: UserService
+    private val userService: UserService,
+    private val messageSource: MessageSource
 ) {
     
     private val logger = LoggerFactory.getLogger(UserController::class.java)
@@ -49,14 +51,14 @@ class UserController(
         return try {
             val currentUsername = getCurrentUsername(request)
             if (currentUsername == null) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.AUTH_ERROR.code, "未获取到用户信息"))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.AUTH_ERROR, "未获取到用户信息", messageSource))
             }
             
             val users = userService.getUserList(currentUsername)
             ResponseEntity.ok(ApiResponse.success(users))
         } catch (e: Exception) {
             logger.error("获取用户列表异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.serverError("获取用户列表失败: ${e.message}"))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "获取用户列表失败: ${e.message}", messageSource))
         }
     }
     
@@ -84,15 +86,15 @@ class UserController(
                 onFailure = { e ->
                     logger.error("创建用户失败: ${e.message}", e)
                     when (e) {
-                        is IllegalArgumentException -> ResponseEntity.ok(ApiResponse.paramError(e.message ?: "参数错误"))
-                        is IllegalStateException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.AUTH_PERMISSION_DENIED.code, e.message ?: "权限不足"))
-                        else -> ResponseEntity.ok(ApiResponse.serverError("创建用户失败: ${e.message}"))
+                        is IllegalArgumentException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, e.message, messageSource))
+                        is IllegalStateException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.AUTH_PERMISSION_DENIED, e.message, messageSource))
+                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "创建用户失败: ${e.message}", messageSource))
                     }
                 }
             )
         } catch (e: Exception) {
             logger.error("创建用户异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.serverError("创建用户失败: ${e.message}"))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "创建用户失败: ${e.message}", messageSource))
         }
     }
     
@@ -120,15 +122,15 @@ class UserController(
                 onFailure = { e ->
                     logger.error("更新用户密码失败: ${e.message}", e)
                     when (e) {
-                        is IllegalArgumentException -> ResponseEntity.ok(ApiResponse.paramError(e.message ?: "参数错误"))
-                        is IllegalStateException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.AUTH_PERMISSION_DENIED.code, e.message ?: "权限不足"))
-                        else -> ResponseEntity.ok(ApiResponse.serverError("更新用户密码失败: ${e.message}"))
+                        is IllegalArgumentException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, e.message, messageSource))
+                        is IllegalStateException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.AUTH_PERMISSION_DENIED, e.message, messageSource))
+                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "更新用户密码失败: ${e.message}", messageSource))
                     }
                 }
             )
         } catch (e: Exception) {
             logger.error("更新用户密码异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.serverError("更新用户密码失败: ${e.message}"))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "更新用户密码失败: ${e.message}", messageSource))
         }
     }
     
@@ -143,7 +145,7 @@ class UserController(
         return try {
             val currentUsername = getCurrentUsername(httpRequest)
             if (currentUsername == null) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.AUTH_ERROR.code, "未获取到用户信息"))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.AUTH_ERROR, "未获取到用户信息", messageSource))
             }
             
             val result = userService.updateOwnPassword(requestBody.newPassword, currentUsername)
@@ -155,14 +157,14 @@ class UserController(
                 onFailure = { e ->
                     logger.error("修改自己密码失败: ${e.message}", e)
                     when (e) {
-                        is IllegalArgumentException -> ResponseEntity.ok(ApiResponse.paramError(e.message ?: "参数错误"))
-                        else -> ResponseEntity.ok(ApiResponse.serverError("修改密码失败: ${e.message}"))
+                        is IllegalArgumentException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, e.message, messageSource))
+                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "修改密码失败: ${e.message}", messageSource))
                     }
                 }
             )
         } catch (e: Exception) {
             logger.error("修改自己密码异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.serverError("修改密码失败: ${e.message}"))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "修改密码失败: ${e.message}", messageSource))
         }
     }
     
@@ -177,7 +179,7 @@ class UserController(
         return try {
             val error = checkDefaultUser(httpRequest)
             if (error != null) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.AUTH_PERMISSION_DENIED.code, error))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.AUTH_PERMISSION_DENIED, error, messageSource))
             }
             
             val currentUsername = getCurrentUsername(httpRequest)!!
@@ -190,15 +192,15 @@ class UserController(
                 onFailure = { e ->
                     logger.error("删除用户失败: ${e.message}", e)
                     when (e) {
-                        is IllegalArgumentException -> ResponseEntity.ok(ApiResponse.paramError(e.message ?: "参数错误"))
-                        is IllegalStateException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.AUTH_PERMISSION_DENIED.code, e.message ?: "权限不足"))
-                        else -> ResponseEntity.ok(ApiResponse.serverError("删除用户失败: ${e.message}"))
+                        is IllegalArgumentException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, e.message, messageSource))
+                        is IllegalStateException -> ResponseEntity.ok(ApiResponse.error(ErrorCode.AUTH_PERMISSION_DENIED, e.message, messageSource))
+                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "删除用户失败: ${e.message}", messageSource))
                     }
                 }
             )
         } catch (e: Exception) {
             logger.error("删除用户异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.serverError("删除用户失败: ${e.message}"))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "删除用户失败: ${e.message}", messageSource))
         }
     }
 }

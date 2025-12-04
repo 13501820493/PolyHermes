@@ -7,6 +7,7 @@ import com.wrbug.polymarketbot.service.ProxyConfigService
 import jakarta.servlet.http.HttpServletRequest
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
+import org.springframework.context.MessageSource
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -17,7 +18,8 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/proxy-config")
 class ProxyConfigController(
     private val proxyConfigService: ProxyConfigService,
-    private val apiHealthCheckService: ApiHealthCheckService
+    private val apiHealthCheckService: ApiHealthCheckService,
+    private val messageSource: MessageSource
 ) {
     
     private val logger = LoggerFactory.getLogger(ProxyConfigController::class.java)
@@ -32,7 +34,7 @@ class ProxyConfigController(
             ResponseEntity.ok(ApiResponse.success(config))
         } catch (e: Exception) {
             logger.error("获取代理配置失败", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "获取代理配置失败：${e.message}"))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "获取代理配置失败：${e.message}", messageSource))
         }
     }
     
@@ -46,7 +48,7 @@ class ProxyConfigController(
             ResponseEntity.ok(ApiResponse.success(configs))
         } catch (e: Exception) {
             logger.error("获取代理配置列表失败", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "获取代理配置列表失败：${e.message}"))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "获取代理配置列表失败：${e.message}", messageSource))
         }
     }
     
@@ -62,11 +64,11 @@ class ProxyConfigController(
             } else {
                 val error = result.exceptionOrNull()
                 logger.error("保存 HTTP 代理配置失败", error)
-                ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, error?.message ?: "保存失败"))
+                ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, error?.message ?: "保存失败", messageSource))
             }
         } catch (e: Exception) {
             logger.error("保存 HTTP 代理配置异常", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "保存 HTTP 代理配置失败：${e.message}"))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "保存 HTTP 代理配置失败：${e.message}", messageSource))
         }
     }
     
@@ -80,7 +82,7 @@ class ProxyConfigController(
             ResponseEntity.ok(ApiResponse.success(result))
         } catch (e: Exception) {
             logger.error("代理检查失败", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "代理检查失败：${e.message}"))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "代理检查失败：${e.message}", messageSource))
         }
     }
     
@@ -91,7 +93,7 @@ class ProxyConfigController(
     fun deleteProxyConfig(@RequestBody request: Map<String, Long>): ResponseEntity<ApiResponse<Unit>> {
         return try {
             val id = request["id"] ?: return ResponseEntity.ok(
-                ApiResponse.error(ErrorCode.PARAM_ERROR, "参数错误：缺少 id")
+                ApiResponse.error(ErrorCode.PARAM_ERROR, "参数错误：缺少 id", messageSource)
             )
             
             val result = proxyConfigService.deleteProxyConfig(id)
@@ -100,11 +102,11 @@ class ProxyConfigController(
             } else {
                 val error = result.exceptionOrNull()
                 logger.error("删除代理配置失败：id=$id", error)
-                ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, error?.message ?: "删除失败"))
+                ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, error?.message ?: "删除失败", messageSource))
             }
         } catch (e: Exception) {
             logger.error("删除代理配置异常", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "删除代理配置失败：${e.message}"))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "删除代理配置失败：${e.message}", messageSource))
         }
     }
     
@@ -118,8 +120,12 @@ class ProxyConfigController(
             ResponseEntity.ok(ApiResponse.success(result))
         } catch (e: Exception) {
             logger.error("API 健康检查失败", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "API 健康检查失败：${e.message}"))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "API 健康检查失败：${e.message}", messageSource))
         }
     }
 }
+
+
+
+
 

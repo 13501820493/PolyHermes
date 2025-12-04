@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { Card, Descriptions, Button, Space, Tag, Spin, message, Typography, Divider, Modal, Form, Input, Alert } from 'antd'
 import { ArrowLeftOutlined, ReloadOutlined, EditOutlined } from '@ant-design/icons'
+import { useTranslation } from 'react-i18next'
 import { useAccountStore } from '../store/accountStore'
 import type { Account } from '../types'
 import { useMediaQuery } from 'react-responsive'
@@ -10,6 +11,7 @@ import { formatUSDC } from '../utils'
 const { Title } = Typography
 
 const AccountDetail: React.FC = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const isMobile = useMediaQuery({ maxWidth: 768 })
@@ -29,7 +31,7 @@ const AccountDetail: React.FC = () => {
       loadAccountDetail()
       loadBalance()
     } else {
-      message.error('账户ID不能为空')
+      message.error(t('account.accountIdRequired'))
       navigate('/accounts')
     }
   }, [accountId])
@@ -42,7 +44,7 @@ const AccountDetail: React.FC = () => {
       const accountData = await fetchAccountDetail(Number(accountId))
       setAccount(accountData)
     } catch (error: any) {
-      message.error(error.message || '获取账户详情失败')
+      message.error(error.message || t('account.getDetailFailed'))
       navigate('/accounts')
     } finally {
       setLoading(false)
@@ -89,7 +91,7 @@ const AccountDetail: React.FC = () => {
       
       await updateAccount(updateData)
       
-      message.success('更新账户成功')
+      message.success(t('account.updateSuccess'))
       setEditModalVisible(false)
       editForm.resetFields()
       
@@ -98,7 +100,7 @@ const AccountDetail: React.FC = () => {
         await loadAccountDetail()
       }
     } catch (error: any) {
-      message.error(error.message || '更新账户失败')
+      message.error(error.message || t('account.updateFailed'))
     } finally {
       setEditLoading(false)
     }
@@ -136,7 +138,7 @@ const AccountDetail: React.FC = () => {
             onClick={() => navigate('/accounts')}
             size={isMobile ? 'middle' : 'large'}
           >
-            返回
+            {t('common.back')}
           </Button>
           <Title level={isMobile ? 4 : 2} style={{ margin: 0, fontSize: isMobile ? '16px' : undefined }}>
             {account.accountName || `账户 ${account.id}`}
@@ -151,7 +153,7 @@ const AccountDetail: React.FC = () => {
             block={isMobile}
             style={isMobile ? { minHeight: '44px' } : undefined}
           >
-            刷新余额
+            {t('account.refreshBalance')}
           </Button>
           <Button
             type="primary"
@@ -169,7 +171,7 @@ const AccountDetail: React.FC = () => {
             block={isMobile}
             style={isMobile ? { minHeight: '44px' } : undefined}
           >
-            编辑
+            {t('common.edit')}
           </Button>
         </Space>
       </div>
@@ -184,13 +186,13 @@ const AccountDetail: React.FC = () => {
           size={isMobile ? 'small' : 'middle'}
           style={{ fontSize: isMobile ? '14px' : undefined }}
         >
-          <Descriptions.Item label="账户ID">
+          <Descriptions.Item label={t('account.accountId')}>
             {account.id}
           </Descriptions.Item>
-          <Descriptions.Item label="账户名称">
+          <Descriptions.Item label={t('account.accountName')}>
             {account.accountName || '-'}
           </Descriptions.Item>
-          <Descriptions.Item label="钱包地址" span={isMobile ? 1 : 2}>
+          <Descriptions.Item label={t('account.walletAddress')} span={isMobile ? 1 : 2}>
             <span style={{ 
               fontFamily: 'monospace', 
               fontSize: isMobile ? '11px' : '14px',
@@ -201,7 +203,7 @@ const AccountDetail: React.FC = () => {
               {account.walletAddress}
             </span>
           </Descriptions.Item>
-          <Descriptions.Item label="账户余额">
+          <Descriptions.Item label={t('account.balance')}>
             {balanceLoading ? (
               <Spin size="small" />
             ) : balance ? (
@@ -218,7 +220,7 @@ const AccountDetail: React.FC = () => {
       <Divider />
       
       <Card 
-        title="API 凭证配置" 
+        title={t('account.apiCredentials')} 
         style={{ 
           marginTop: isMobile ? '12px' : '16px',
           margin: isMobile ? '0 -8px' : '0',
@@ -231,26 +233,26 @@ const AccountDetail: React.FC = () => {
           size={isMobile ? 'small' : 'middle'}
           style={{ fontSize: isMobile ? '14px' : undefined }}
         >
-          <Descriptions.Item label="API Key">
+          <Descriptions.Item label={t('account.apiKey')}>
             <Tag color={account.apiKeyConfigured ? 'success' : 'default'}>
-              {account.apiKeyConfigured ? '已配置' : '未配置'}
+              {account.apiKeyConfigured ? t('account.configured') : t('account.notConfigured')}
             </Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="API Secret">
+          <Descriptions.Item label={t('account.apiSecret')}>
             <Tag color={account.apiSecretConfigured ? 'success' : 'default'}>
-              {account.apiSecretConfigured ? '已配置' : '未配置'}
+              {account.apiSecretConfigured ? t('account.configured') : t('account.notConfigured')}
             </Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="API Passphrase">
+          <Descriptions.Item label={t('account.apiPassphrase')}>
             <Tag color={account.apiPassphraseConfigured ? 'success' : 'default'}>
-              {account.apiPassphraseConfigured ? '已配置' : '未配置'}
+              {account.apiPassphraseConfigured ? t('account.configured') : t('account.notConfigured')}
             </Tag>
           </Descriptions.Item>
-          <Descriptions.Item label="配置状态">
+          <Descriptions.Item label={t('account.apiCredentials')}>
             {account.apiKeyConfigured && account.apiSecretConfigured && account.apiPassphraseConfigured ? (
-              <Tag color="success">完整配置</Tag>
+              <Tag color="success">{t('account.fullConfig')}</Tag>
             ) : (
-              <Tag color="warning">部分配置</Tag>
+              <Tag color="warning">{t('account.partialConfig')}</Tag>
             )}
           </Descriptions.Item>
         </Descriptions>
@@ -262,7 +264,7 @@ const AccountDetail: React.FC = () => {
         <>
           <Divider style={{ margin: isMobile ? '12px 0' : '16px 0' }} />
           <Card 
-            title="交易统计" 
+            title={t('account.statistics')} 
             style={{ 
               marginTop: isMobile ? '12px' : '16px',
               margin: isMobile ? '0 -8px' : '0',
@@ -276,27 +278,27 @@ const AccountDetail: React.FC = () => {
               style={{ fontSize: isMobile ? '14px' : undefined }}
             >
               {account.totalOrders !== undefined && (
-                <Descriptions.Item label="总订单数">
+                <Descriptions.Item label={t('account.totalOrders')}>
                   {account.totalOrders}
                 </Descriptions.Item>
               )}
               {account.activeOrders !== undefined && (
-                <Descriptions.Item label="活跃订单数">
+                <Descriptions.Item label={t('account.activeOrders')}>
                   <Tag color={account.activeOrders > 0 ? 'orange' : 'default'}>{account.activeOrders}</Tag>
                 </Descriptions.Item>
               )}
               {account.completedOrders !== undefined && (
-                <Descriptions.Item label="已完成订单数">
+                <Descriptions.Item label={t('account.completedOrders')}>
                   <Tag color="success">{account.completedOrders}</Tag>
                 </Descriptions.Item>
               )}
               {account.positionCount !== undefined && (
-                <Descriptions.Item label="持仓数量">
+                <Descriptions.Item label={t('account.positionCount')}>
                   <Tag color={account.positionCount > 0 ? 'blue' : 'default'}>{account.positionCount}</Tag>
                 </Descriptions.Item>
               )}
               {account.totalPnl !== undefined && (
-                <Descriptions.Item label="总盈亏">
+                <Descriptions.Item label={t('account.totalPnl')}>
                   <span style={{ 
                     fontWeight: 'bold',
                     color: account.totalPnl.startsWith('-') ? '#ff4d4f' : '#52c41a'
@@ -312,7 +314,7 @@ const AccountDetail: React.FC = () => {
       
       {/* 编辑账户 Modal */}
       <Modal
-        title={account ? `编辑账户 - ${account.accountName || `账户 ${account.id}`}` : '编辑账户'}
+        title={account ? `${t('common.edit')} ${t('account.title')} - ${account.accountName || `${t('account.title')} ${account.id}`}` : t('common.edit') + ' ' + t('account.title')}
         open={editModalVisible}
         onCancel={() => {
           setEditModalVisible(false)
@@ -333,42 +335,42 @@ const AccountDetail: React.FC = () => {
             size={isMobile ? 'middle' : 'large'}
           >
             <Alert
-              message="编辑提示"
-              description="API 凭证字段留空表示不修改。如需更新 API 凭证，请输入新值；如需保持原值不变，请留空。"
+              message={t('account.editTip')}
+              description={t('account.editTipDesc')}
               type="info"
               showIcon
               style={{ marginBottom: '24px' }}
             />
             
             <Form.Item
-              label="账户名称"
+              label={t('account.accountName')}
               name="accountName"
             >
-              <Input placeholder="账户名称（可选）" />
+              <Input placeholder={t('account.accountNamePlaceholder')} />
             </Form.Item>
             
             <Form.Item
-              label="API Key"
+              label={t('account.apiKey')}
               name="apiKey"
-              help="留空表示不修改，输入新值将更新 API Key"
+              help={t('account.leaveEmptyToNotModify')}
             >
-              <Input.Password placeholder="留空表示不修改" />
+              <Input.Password placeholder={t('account.leaveEmptyToNotModify')} />
             </Form.Item>
             
             <Form.Item
-              label="API Secret"
+              label={t('account.apiSecret')}
               name="apiSecret"
-              help="留空表示不修改，输入新值将更新 API Secret"
+              help={t('account.leaveEmptyToNotModify')}
             >
-              <Input.Password placeholder="留空表示不修改" />
+              <Input.Password placeholder={t('account.leaveEmptyToNotModify')} />
             </Form.Item>
             
             <Form.Item
-              label="API Passphrase"
+              label={t('account.apiPassphrase')}
               name="apiPassphrase"
-              help="留空表示不修改，输入新值将更新 API Passphrase"
+              help={t('account.leaveEmptyToNotModify')}
             >
-              <Input.Password placeholder="留空表示不修改" />
+              <Input.Password placeholder={t('account.leaveEmptyToNotModify')} />
             </Form.Item>
             
             <Form.Item>
@@ -381,7 +383,7 @@ const AccountDetail: React.FC = () => {
                   size={isMobile ? 'middle' : 'large'}
                   style={isMobile ? { minHeight: '44px' } : undefined}
                 >
-                  取消
+                  {t('common.cancel')}
                 </Button>
                 <Button
                   type="primary"
@@ -390,7 +392,7 @@ const AccountDetail: React.FC = () => {
                   size={isMobile ? 'middle' : 'large'}
                   style={isMobile ? { minHeight: '44px' } : undefined}
                 >
-                  保存
+                  {t('common.save')}
                 </Button>
               </Space>
             </Form.Item>
@@ -398,7 +400,7 @@ const AccountDetail: React.FC = () => {
         ) : (
           <div style={{ textAlign: 'center', padding: '20px' }}>
             <Spin size="large" />
-            <div style={{ marginTop: '16px' }}>加载中...</div>
+            <div style={{ marginTop: '16px' }}>{t('common.loading')}</div>
           </div>
         )}
       </Modal>
@@ -407,4 +409,8 @@ const AccountDetail: React.FC = () => {
 }
 
 export default AccountDetail
+
+
+
+
 

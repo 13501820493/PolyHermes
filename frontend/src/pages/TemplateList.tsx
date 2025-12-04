@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Table, Button, Space, Tag, Popconfirm, message, Input, Modal, Form, Radio, InputNumber, Switch, Divider, Spin } from 'antd'
 import { PlusOutlined, EditOutlined, DeleteOutlined, CopyOutlined } from '@ant-design/icons'
+import { useTranslation } from 'react-i18next'
 import { apiService } from '../services/api'
 import type { CopyTradingTemplate } from '../types'
 import { useMediaQuery } from 'react-responsive'
@@ -10,6 +11,7 @@ import { formatUSDC } from '../utils'
 const { Search } = Input
 
 const TemplateList: React.FC = () => {
+  const { t, i18n } = useTranslation()
   const navigate = useNavigate()
   const isMobile = useMediaQuery({ maxWidth: 768 })
   const [templates, setTemplates] = useState<CopyTradingTemplate[]>([])
@@ -32,10 +34,10 @@ const TemplateList: React.FC = () => {
       if (response.data.code === 0 && response.data.data) {
         setTemplates(response.data.data.list || [])
       } else {
-        message.error(response.data.msg || '获取模板列表失败')
+        message.error(response.data.msg || t('templateList.fetchFailed') || '获取模板列表失败')
       }
     } catch (error: any) {
-      message.error(error.message || '获取模板列表失败')
+      message.error(error.message || t('templateList.fetchFailed') || '获取模板列表失败')
     } finally {
       setLoading(false)
     }
@@ -45,13 +47,13 @@ const TemplateList: React.FC = () => {
     try {
       const response = await apiService.templates.delete({ templateId })
       if (response.data.code === 0) {
-        message.success('删除模板成功')
+        message.success(t('templateList.deleteSuccess') || '删除模板成功')
         fetchTemplates()
       } else {
-        message.error(response.data.msg || '删除模板失败')
+        message.error(response.data.msg || t('templateList.deleteFailed') || '删除模板失败')
       }
     } catch (error: any) {
-      message.error(error.message || '删除模板失败')
+      message.error(error.message || t('templateList.deleteFailed') || '删除模板失败')
     }
   }
   
@@ -61,7 +63,7 @@ const TemplateList: React.FC = () => {
     
     // 填充表单数据
     copyForm.setFieldsValue({
-      templateName: `${template.templateName}-副本`,
+      templateName: `${template.templateName}-${t('templateList.copySuffix') || '副本'}`,
       copyMode: template.copyMode,
       copyRatio: template.copyRatio ? parseFloat(template.copyRatio) * 100 : 100,
       fixedAmount: template.fixedAmount ? parseFloat(template.fixedAmount) : undefined,
@@ -78,7 +80,7 @@ const TemplateList: React.FC = () => {
   const handleCopySubmit = async (values: any) => {
     // 前端校验：如果填写了 minOrderSize，必须 >= 1
     if (values.copyMode === 'RATIO' && values.minOrderSize !== undefined && values.minOrderSize !== null && values.minOrderSize !== '' && Number(values.minOrderSize) < 1) {
-      message.error('最小金额必须 >= 1')
+      message.error(t('templateList.minAmountError') || '最小金额必须 >= 1')
       return
     }
     
@@ -86,16 +88,16 @@ const TemplateList: React.FC = () => {
     if (values.copyMode === 'FIXED') {
       const fixedAmount = values.fixedAmount
       if (fixedAmount === undefined || fixedAmount === null || fixedAmount === '') {
-        message.error('请输入固定跟单金额')
+        message.error(t('templateList.fixedAmountRequired') || '请输入固定跟单金额')
         return
       }
       const amount = Number(fixedAmount)
       if (isNaN(amount)) {
-        message.error('请输入有效的数字')
+        message.error(t('templateList.invalidNumber') || '请输入有效的数字')
         return
       }
       if (amount < 1) {
-        message.error('固定金额必须 >= 1，请重新输入')
+        message.error(t('templateList.fixedAmountError') || '固定金额必须 >= 1，请重新输入')
         return
       }
     }
@@ -116,15 +118,15 @@ const TemplateList: React.FC = () => {
       })
       
       if (response.data.code === 0) {
-        message.success('复制模板成功')
+        message.success(t('templateList.copySuccess') || '复制模板成功')
         setCopyModalVisible(false)
         copyForm.resetFields()
         fetchTemplates()
       } else {
-        message.error(response.data.msg || '复制模板失败')
+        message.error(response.data.msg || t('templateList.copyFailed') || '复制模板失败')
       }
     } catch (error: any) {
-      message.error(error.message || '复制模板失败')
+      message.error(error.message || t('templateList.copyFailed') || '复制模板失败')
     } finally {
       setCopyLoading(false)
     }
@@ -142,56 +144,56 @@ const TemplateList: React.FC = () => {
   
   const columns = [
     {
-      title: '模板名称',
+      title: t('templateList.templateName') || '模板名称',
       dataIndex: 'templateName',
       key: 'templateName',
       render: (text: string) => <strong>{text}</strong>
     },
     {
-      title: '跟单模式',
+      title: t('templateList.copyMode') || '跟单模式',
       dataIndex: 'copyMode',
       key: 'copyMode',
       render: (mode: string) => (
         <Tag color={mode === 'RATIO' ? 'blue' : 'green'}>
-          {mode === 'RATIO' ? '比例' : '固定金额'}
+          {mode === 'RATIO' ? t('templateList.ratio') || '比例' : t('templateList.fixedAmount') || '固定金额'}
         </Tag>
       )
     },
     {
-      title: '跟单配置',
+      title: t('templateList.copyConfig') || '跟单配置',
       key: 'copyConfig',
       render: (_: any, record: CopyTradingTemplate) => {
         if (record.copyMode === 'RATIO') {
-          return `比例 ${record.copyRatio}x`
+          return `${t('templateList.ratio') || '比例'} ${record.copyRatio}x`
         } else if (record.copyMode === 'FIXED' && record.fixedAmount) {
-          return `固定 ${formatUSDC(record.fixedAmount)} USDC`
+          return `${t('templateList.fixedAmount') || '固定'} ${formatUSDC(record.fixedAmount)} USDC`
         }
         return '-'
       }
     },
     {
-      title: '跟单卖出',
+      title: t('templateList.supportSell') || '跟单卖出',
       dataIndex: 'supportSell',
       key: 'supportSell',
       render: (support: boolean) => (
         <Tag color={support ? 'green' : 'red'}>
-          {support ? '是' : '否'}
+          {support ? t('common.yes') || '是' : t('common.no') || '否'}
         </Tag>
       )
     },
     {
-      title: '使用次数',
+      title: t('templateList.useCount') || '使用次数',
       dataIndex: 'useCount',
       key: 'useCount',
       render: (count: number) => <Tag>{count}</Tag>
     },
     {
-      title: '创建时间',
+      title: t('common.createdAt') || '创建时间',
       dataIndex: 'createdAt',
       key: 'createdAt',
       render: (timestamp: number) => {
         const date = new Date(timestamp)
-        return date.toLocaleString('zh-CN', {
+        return date.toLocaleString(i18n.language || 'zh-CN', {
           year: 'numeric',
           month: '2-digit',
           day: '2-digit',
@@ -204,7 +206,7 @@ const TemplateList: React.FC = () => {
       defaultSortOrder: 'descend' as const
     },
     {
-      title: '操作',
+      title: t('common.actions') || '操作',
       key: 'action',
       width: isMobile ? 120 : 200,
       render: (_: any, record: CopyTradingTemplate) => (
@@ -215,7 +217,7 @@ const TemplateList: React.FC = () => {
             icon={<EditOutlined />}
             onClick={() => navigate(`/templates/edit/${record.id}`)}
           >
-            编辑
+            {t('common.edit') || '编辑'}
           </Button>
           <Button
             type="link"
@@ -223,14 +225,14 @@ const TemplateList: React.FC = () => {
             icon={<CopyOutlined />}
             onClick={() => handleCopy(record)}
           >
-            复制
+            {t('templateList.copy') || '复制'}
           </Button>
           <Popconfirm
-            title="确定要删除这个模板吗？"
-            description="删除后无法恢复，请确保没有跟单关系在使用该模板"
+            title={t('templateList.deleteConfirm') || '确定要删除这个模板吗？'}
+            description={t('templateList.deleteConfirmDesc') || '删除后无法恢复，请确保没有跟单关系在使用该模板'}
             onConfirm={() => handleDelete(record.id)}
-            okText="确定"
-            cancelText="取消"
+            okText={t('common.confirm') || '确定'}
+            cancelText={t('common.cancel') || '取消'}
           >
             <Button
               type="link"
@@ -238,7 +240,7 @@ const TemplateList: React.FC = () => {
               danger
               icon={<DeleteOutlined />}
             >
-              删除
+              {t('common.delete') || '删除'}
             </Button>
           </Popconfirm>
         </Space>
@@ -250,10 +252,10 @@ const TemplateList: React.FC = () => {
     <div>
       <Card>
         <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
-          <h2 style={{ margin: 0 }}>跟单模板管理</h2>
+          <h2 style={{ margin: 0 }}>{t('templateList.title') || '跟单模板管理'}</h2>
           <Space>
             <Search
-              placeholder="搜索模板名称"
+              placeholder={t('templateList.searchPlaceholder') || '搜索模板名称'}
               allowClear
               style={{ width: isMobile ? 150 : 250 }}
               onSearch={setSearchText}
@@ -264,7 +266,7 @@ const TemplateList: React.FC = () => {
               icon={<PlusOutlined />}
               onClick={() => navigate('/templates/add')}
             >
-              新增模板
+              {t('templateList.addTemplate') || '新增模板'}
             </Button>
           </Space>
         </div>
@@ -278,13 +280,13 @@ const TemplateList: React.FC = () => {
               </div>
             ) : filteredTemplates.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-                暂无模板数据
+                {t('templateList.noData') || '暂无模板数据'}
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 {filteredTemplates.map((template) => {
                   const date = new Date(template.createdAt)
-                  const formattedDate = date.toLocaleString('zh-CN', {
+                  const formattedDate = date.toLocaleString(i18n.language || 'zh-CN', {
                     year: 'numeric',
                     month: '2-digit',
                     day: '2-digit',
@@ -314,12 +316,12 @@ const TemplateList: React.FC = () => {
                         </div>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
                           <Tag color={template.copyMode === 'RATIO' ? 'blue' : 'green'}>
-                            {template.copyMode === 'RATIO' ? '比例模式' : '固定金额模式'}
+                            {template.copyMode === 'RATIO' ? (t('templateList.ratioMode') || '比例模式') : (t('templateList.fixedAmountMode') || '固定金额模式')}
                           </Tag>
                           <Tag color={template.supportSell ? 'green' : 'red'}>
-                            {template.supportSell ? '跟单卖出' : '不跟单卖出'}
+                            {template.supportSell ? (t('templateList.supportSell') || '跟单卖出') : (t('templateList.notSupportSell') || '不跟单卖出')}
                           </Tag>
-                          <Tag>{template.useCount} 次使用</Tag>
+                          <Tag>{template.useCount} {t('templateList.timesUsed') || '次使用'}</Tag>
                         </div>
                       </div>
                       
@@ -327,12 +329,12 @@ const TemplateList: React.FC = () => {
                       
                       {/* 跟单配置 */}
                       <div style={{ marginBottom: '12px' }}>
-                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>跟单配置</div>
+                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>{t('templateList.copyConfig') || '跟单配置'}</div>
                         <div style={{ fontSize: '14px', fontWeight: '500' }}>
                           {template.copyMode === 'RATIO' 
-                            ? `比例 ${template.copyRatio}x`
+                            ? `${t('templateList.ratio') || '比例'} ${template.copyRatio}x`
                             : template.fixedAmount 
-                              ? `固定 ${formatUSDC(template.fixedAmount)} USDC`
+                              ? `${t('templateList.fixedAmount') || '固定'} ${formatUSDC(template.fixedAmount)} USDC`
                               : '-'
                           }
                         </div>
@@ -341,31 +343,31 @@ const TemplateList: React.FC = () => {
                       {/* 其他配置信息 */}
                       {template.copyMode === 'RATIO' && (
                         <div style={{ marginBottom: '12px' }}>
-                          <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>金额限制</div>
+                          <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>{t('templateList.amountLimit') || '金额限制'}</div>
                           <div style={{ fontSize: '13px', color: '#333' }}>
                             {template.maxOrderSize && (
-                              <span>最大: {formatUSDC(template.maxOrderSize)} USDC</span>
+                              <span>{t('templateList.max') || '最大'}: {formatUSDC(template.maxOrderSize)} USDC</span>
                             )}
                             {template.maxOrderSize && template.minOrderSize && <span> | </span>}
                             {template.minOrderSize && (
-                              <span>最小: {formatUSDC(template.minOrderSize)} USDC</span>
+                              <span>{t('templateList.min') || '最小'}: {formatUSDC(template.minOrderSize)} USDC</span>
                             )}
-                            {!template.maxOrderSize && !template.minOrderSize && <span style={{ color: '#999' }}>未设置</span>}
+                            {!template.maxOrderSize && !template.minOrderSize && <span style={{ color: '#999' }}>{t('templateList.notSet') || '未设置'}</span>}
                           </div>
                         </div>
                       )}
                       
                       <div style={{ marginBottom: '12px' }}>
-                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>其他配置</div>
+                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>{t('templateList.otherConfig') || '其他配置'}</div>
                         <div style={{ fontSize: '13px', color: '#333' }}>
-                          每日最大订单: {template.maxDailyOrders} | 价格容忍度: {template.priceTolerance}%
+                          {t('templateList.maxDailyOrders') || '每日最大订单'}: {template.maxDailyOrders} | {t('templateList.priceTolerance') || '价格容忍度'}: {template.priceTolerance}%
                         </div>
                       </div>
                       
                       {/* 创建时间 */}
                       <div style={{ marginBottom: '16px' }}>
                         <div style={{ fontSize: '12px', color: '#999' }}>
-                          创建时间: {formattedDate}
+                          {t('common.createdAt') || '创建时间'}: {formattedDate}
                         </div>
                       </div>
                       
@@ -378,7 +380,7 @@ const TemplateList: React.FC = () => {
                           onClick={() => navigate(`/templates/edit/${template.id}`)}
                           style={{ flex: 1, minWidth: '80px' }}
                         >
-                          编辑
+                          {t('common.edit') || '编辑'}
                         </Button>
                         <Button
                           size="small"
@@ -386,14 +388,14 @@ const TemplateList: React.FC = () => {
                           onClick={() => handleCopy(template)}
                           style={{ flex: 1, minWidth: '80px' }}
                         >
-                          复制
+                          {t('templateList.copy') || '复制'}
                         </Button>
                         <Popconfirm
-                          title="确定要删除这个模板吗？"
-                          description="删除后无法恢复，请确保没有跟单关系在使用该模板"
+                          title={t('templateList.deleteConfirm') || '确定要删除这个模板吗？'}
+                          description={t('templateList.deleteConfirmDesc') || '删除后无法恢复，请确保没有跟单关系在使用该模板'}
                           onConfirm={() => handleDelete(template.id)}
-                          okText="确定"
-                          cancelText="取消"
+                          okText={t('common.confirm') || '确定'}
+                          cancelText={t('common.cancel') || '取消'}
                         >
                           <Button
                             danger
@@ -401,7 +403,7 @@ const TemplateList: React.FC = () => {
                             icon={<DeleteOutlined />}
                             style={{ flex: 1, minWidth: '80px' }}
                           >
-                            删除
+                            {t('common.delete') || '删除'}
                           </Button>
                         </Popconfirm>
                       </div>

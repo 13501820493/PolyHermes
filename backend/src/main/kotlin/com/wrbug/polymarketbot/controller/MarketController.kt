@@ -7,6 +7,7 @@ import com.wrbug.polymarketbot.service.AccountService
 import com.wrbug.polymarketbot.service.PolymarketClobService
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
+import org.springframework.context.MessageSource
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
@@ -18,7 +19,8 @@ import org.springframework.web.bind.annotation.*
 @RequestMapping("/api/copy-trading/markets")
 class MarketController(
     private val accountService: AccountService,
-    private val clobService: PolymarketClobService
+    private val clobService: PolymarketClobService,
+    private val messageSource: MessageSource
 ) {
     
     private val logger = LoggerFactory.getLogger(MarketController::class.java)
@@ -31,7 +33,7 @@ class MarketController(
     fun getMarketPrice(@RequestBody request: MarketPriceRequest): ResponseEntity<ApiResponse<MarketPriceResponse>> {
         return try {
             if (request.marketId.isBlank()) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_MARKET_ID_EMPTY))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_MARKET_ID_EMPTY, messageSource = messageSource))
             }
             
             val result = runBlocking { accountService.getMarketPrice(request.marketId) }
@@ -41,12 +43,12 @@ class MarketController(
                 },
                 onFailure = { e ->
                     logger.error("获取市场价格失败: ${e.message}", e)
-                    ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_MARKET_PRICE_FETCH_FAILED, e.message))
+                    ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_MARKET_PRICE_FETCH_FAILED, e.message, messageSource))
                 }
             )
         } catch (e: Exception) {
             logger.error("获取市场价格异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_MARKET_PRICE_FETCH_FAILED, e.message))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_MARKET_PRICE_FETCH_FAILED, e.message, messageSource))
         }
     }
     
@@ -59,7 +61,7 @@ class MarketController(
     fun getLatestPrice(@RequestBody request: LatestPriceRequest): ResponseEntity<ApiResponse<LatestPriceResponse>> {
         return try {
             if (request.tokenId.isBlank()) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_TOKEN_ID_EMPTY))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_TOKEN_ID_EMPTY, messageSource = messageSource))
             }
             
             val result = runBlocking { clobService.getLatestPrice(request.tokenId) }
@@ -69,13 +71,17 @@ class MarketController(
                 },
                 onFailure = { e ->
                     logger.error("获取最新价失败: ${e.message}", e)
-                    ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_MARKET_LATEST_PRICE_FETCH_FAILED, e.message))
+                    ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_MARKET_LATEST_PRICE_FETCH_FAILED, e.message, messageSource))
                 }
             )
         } catch (e: Exception) {
             logger.error("获取最新价异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_MARKET_LATEST_PRICE_FETCH_FAILED, e.message))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_MARKET_LATEST_PRICE_FETCH_FAILED, e.message, messageSource))
         }
     }
 }
+
+
+
+
 

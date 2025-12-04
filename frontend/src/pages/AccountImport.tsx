@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Card, Form, Input, Button, message, Typography, Radio, Space, Alert } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
+import { useTranslation } from 'react-i18next'
 import { useAccountStore } from '../store/accountStore'
 import { 
   getAddressFromPrivateKey, 
@@ -18,6 +19,7 @@ const { Title } = Typography
 type ImportType = 'privateKey' | 'mnemonic'
 
 const AccountImport: React.FC = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const isMobile = useMediaQuery({ maxWidth: 768 })
   const { importAccount, loading } = useAccountStore()
@@ -37,7 +39,7 @@ const AccountImport: React.FC = () => {
     
     // 验证私钥格式
     if (!isValidPrivateKey(privateKey)) {
-      setAddressError('私钥格式不正确（应为64位十六进制字符串）')
+      setAddressError(t('accountImport.privateKeyInvalid'))
       setDerivedAddress('')
       return
     }
@@ -50,7 +52,7 @@ const AccountImport: React.FC = () => {
       // 自动填充钱包地址字段
       form.setFieldsValue({ walletAddress: address })
     } catch (error: any) {
-      setAddressError(error.message || '无法从私钥推导地址')
+      setAddressError(error.message || t('accountImport.addressError'))
       setDerivedAddress('')
     }
   }
@@ -66,7 +68,7 @@ const AccountImport: React.FC = () => {
     
     // 验证助记词格式
     if (!isValidMnemonic(mnemonic)) {
-      setAddressError('助记词格式不正确（应为12或24个单词，用空格分隔）')
+      setAddressError(t('accountImport.mnemonicInvalid'))
       setDerivedAddress('')
       return
     }
@@ -79,7 +81,7 @@ const AccountImport: React.FC = () => {
       // 自动填充钱包地址字段
       form.setFieldsValue({ walletAddress: address })
     } catch (error: any) {
-      setAddressError(error.message || '无法从助记词推导地址')
+      setAddressError(error.message || t('accountImport.addressErrorMnemonic'))
       setDerivedAddress('')
     }
   }
@@ -96,13 +98,13 @@ const AccountImport: React.FC = () => {
         
         // 验证推导的地址和输入的地址是否一致
         if (derivedAddress && walletAddress !== derivedAddress) {
-          message.error('钱包地址与私钥不匹配')
+          message.error(t('accountImport.walletAddressMismatch'))
           return
         }
       } else {
         // 助记词模式
         if (!values.mnemonic) {
-          message.error('请输入助记词')
+          message.error(t('accountImport.mnemonicRequired'))
           return
         }
         
@@ -114,7 +116,7 @@ const AccountImport: React.FC = () => {
         if (values.walletAddress) {
           if (values.walletAddress !== derivedAddressFromMnemonic) {
             // 地址不匹配，使用推导的地址（因为私钥是从助记词导出的，必须使用对应的地址）
-            message.warning(`输入的地址与助记词推导的地址不一致。推导的地址: ${derivedAddressFromMnemonic}，将使用推导的地址`)
+            message.warning(`${t('accountImport.walletAddressMismatchMnemonic')}: ${derivedAddressFromMnemonic}`)
             walletAddress = derivedAddressFromMnemonic
           } else {
             // 地址匹配，使用用户输入的地址
@@ -128,7 +130,7 @@ const AccountImport: React.FC = () => {
       
       // 验证钱包地址格式
       if (!isValidWalletAddress(walletAddress)) {
-        message.error('钱包地址格式不正确')
+        message.error(t('accountImport.walletAddressInvalid'))
         return
       }
       
@@ -138,10 +140,10 @@ const AccountImport: React.FC = () => {
         accountName: values.accountName
       })
       
-      message.success('导入账户成功')
+      message.success(t('accountImport.importSuccess'))
       navigate('/accounts')
     } catch (error: any) {
-      message.error(error.message || '导入账户失败')
+      message.error(error.message || t('accountImport.importFailed'))
     }
   }
   
@@ -153,15 +155,15 @@ const AccountImport: React.FC = () => {
           onClick={() => navigate('/accounts')}
           style={{ marginBottom: '16px' }}
         >
-          返回
+          {t('accountImport.back')}
         </Button>
-        <Title level={2} style={{ margin: 0 }}>导入账户</Title>
+        <Title level={2} style={{ margin: 0 }}>{t('accountImport.title')}</Title>
       </div>
       
       <Card>
         <Alert
-          message="安全提示"
-          description="私钥将存储在后端数据库中，请确保数据库访问安全。建议使用 HTTPS 连接。"
+          message={t('accountImport.securityTip')}
+          description={t('accountImport.securityTipDesc')}
           type="warning"
           showIcon
           style={{ marginBottom: '24px' }}
@@ -173,7 +175,7 @@ const AccountImport: React.FC = () => {
           onFinish={handleSubmit}
           size={isMobile ? 'middle' : 'large'}
         >
-          <Form.Item label="导入方式">
+          <Form.Item label={t('accountImport.importMethod')}>
             <Radio.Group 
               value={importType} 
               onChange={(e) => {
@@ -183,51 +185,51 @@ const AccountImport: React.FC = () => {
                 form.setFieldsValue({ walletAddress: '' })
               }}
             >
-              <Radio value="privateKey">私钥</Radio>
-              <Radio value="mnemonic">助记词</Radio>
+              <Radio value="privateKey">{t('accountImport.privateKey')}</Radio>
+              <Radio value="mnemonic">{t('accountImport.mnemonic')}</Radio>
             </Radio.Group>
           </Form.Item>
           
           {importType === 'privateKey' ? (
             <>
               <Form.Item
-                label="私钥"
+                label={t('accountImport.privateKeyLabel')}
                 name="privateKey"
                 rules={[
-                  { required: true, message: '请输入私钥' },
+                  { required: true, message: t('accountImport.privateKeyRequired') },
                   {
                     validator: (_, value) => {
                       if (!value) return Promise.resolve()
                       if (!isValidPrivateKey(value)) {
-                        return Promise.reject(new Error('私钥格式不正确（应为64位十六进制字符串）'))
+                        return Promise.reject(new Error(t('accountImport.privateKeyInvalid')))
                       }
                       return Promise.resolve()
                     }
                   }
                 ]}
-                help={addressError || (derivedAddress ? `推导地址: ${derivedAddress}` : '')}
+                help={addressError || (derivedAddress ? `${t('accountImport.derivedAddress')}: ${derivedAddress}` : '')}
                 validateStatus={addressError ? 'error' : derivedAddress ? 'success' : ''}
               >
                 <Input.TextArea
                   rows={3}
-                  placeholder="请输入私钥（64位十六进制字符串，可选0x前缀）"
+                  placeholder={t('accountImport.privateKeyPlaceholder')}
                   onChange={handlePrivateKeyChange}
                 />
               </Form.Item>
               
               <Form.Item
-                label="钱包地址"
+                label={t('accountImport.walletAddress')}
                 name="walletAddress"
                 rules={[
-                  { required: true, message: '请输入钱包地址' },
+                  { required: true, message: t('accountImport.walletAddressRequired') },
                   {
                     validator: (_, value) => {
                       if (!value) return Promise.resolve()
                       if (!isValidWalletAddress(value)) {
-                        return Promise.reject(new Error('钱包地址格式不正确'))
+                        return Promise.reject(new Error(t('accountImport.walletAddressInvalid')))
                       }
                       if (derivedAddress && value !== derivedAddress) {
-                        return Promise.reject(new Error('钱包地址与私钥不匹配'))
+                        return Promise.reject(new Error(t('accountImport.walletAddressMismatch')))
                       }
                       return Promise.resolve()
                     }
@@ -235,7 +237,7 @@ const AccountImport: React.FC = () => {
                 ]}
               >
                 <Input
-                  placeholder="钱包地址（将从私钥自动推导）"
+                  placeholder={t('accountImport.walletAddressPlaceholder')}
                   readOnly={!!derivedAddress}
                 />
               </Form.Item>
@@ -243,43 +245,43 @@ const AccountImport: React.FC = () => {
           ) : (
             <>
               <Form.Item
-                label="助记词"
+                label={t('accountImport.mnemonicLabel')}
                 name="mnemonic"
                 rules={[
-                  { required: true, message: '请输入助记词' },
+                  { required: true, message: t('accountImport.mnemonicRequired') },
                   {
                     validator: (_, value) => {
                       if (!value) return Promise.resolve()
                       if (!isValidMnemonic(value)) {
-                        return Promise.reject(new Error('助记词格式不正确（应为12或24个单词，用空格分隔）'))
+                        return Promise.reject(new Error(t('accountImport.mnemonicInvalid')))
                       }
                       return Promise.resolve()
                     }
                   }
                 ]}
-                help={addressError || (derivedAddress ? `推导地址: ${derivedAddress}` : '')}
+                help={addressError || (derivedAddress ? `${t('accountImport.derivedAddress')}: ${derivedAddress}` : '')}
                 validateStatus={addressError ? 'error' : derivedAddress ? 'success' : ''}
               >
                 <Input.TextArea
                   rows={4}
-                  placeholder="请输入12或24个单词的助记词（用空格分隔）"
+                  placeholder={t('accountImport.mnemonicPlaceholder')}
                   onChange={handleMnemonicChange}
                 />
               </Form.Item>
               
               <Form.Item
-                label="钱包地址"
+                label={t('accountImport.walletAddress')}
                 name="walletAddress"
                 rules={[
-                  { required: true, message: '请输入钱包地址' },
+                  { required: true, message: t('accountImport.walletAddressRequired') },
                   {
                     validator: (_, value) => {
                       if (!value) return Promise.resolve()
                       if (!isValidWalletAddress(value)) {
-                        return Promise.reject(new Error('钱包地址格式不正确'))
+                        return Promise.reject(new Error(t('accountImport.walletAddressInvalid')))
                       }
                       if (derivedAddress && value !== derivedAddress) {
-                        return Promise.reject(new Error('钱包地址与助记词不匹配'))
+                        return Promise.reject(new Error(t('accountImport.walletAddressMismatchMnemonic')))
                       }
                       return Promise.resolve()
                     }
@@ -287,7 +289,7 @@ const AccountImport: React.FC = () => {
                 ]}
               >
                 <Input
-                  placeholder="钱包地址（将从助记词自动推导）"
+                  placeholder={t('accountImport.walletAddressPlaceholder')}
                   readOnly={!!derivedAddress}
                 />
               </Form.Item>
@@ -295,10 +297,10 @@ const AccountImport: React.FC = () => {
           )}
           
           <Form.Item
-            label="账户名称"
+            label={t('accountImport.accountName')}
             name="accountName"
           >
-            <Input placeholder="可选，用于标识账户" />
+            <Input placeholder={t('accountImport.accountNamePlaceholder')} />
           </Form.Item>
           
           
@@ -310,10 +312,10 @@ const AccountImport: React.FC = () => {
                 loading={loading}
                 size={isMobile ? 'middle' : 'large'}
               >
-                导入账户
+                {t('accountImport.importAccount')}
               </Button>
               <Button onClick={() => navigate('/accounts')}>
-                取消
+                {t('common.cancel')}
               </Button>
             </Space>
           </Form.Item>

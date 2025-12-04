@@ -6,6 +6,7 @@ import com.wrbug.polymarketbot.service.AccountService
 import com.wrbug.polymarketbot.util.toSafeBigDecimal
 import kotlinx.coroutines.runBlocking
 import org.slf4j.LoggerFactory
+import org.springframework.context.MessageSource
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 import java.math.BigDecimal
@@ -16,7 +17,8 @@ import java.math.BigDecimal
 @RestController
 @RequestMapping("/api/copy-trading/accounts")
 class AccountController(
-    private val accountService: AccountService
+    private val accountService: AccountService,
+    private val messageSource: MessageSource
 ) {
 
     private val logger = LoggerFactory.getLogger(AccountController::class.java)
@@ -29,10 +31,10 @@ class AccountController(
         return try {
             // 参数验证
             if (request.privateKey.isBlank()) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_PRIVATE_KEY_EMPTY))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_PRIVATE_KEY_EMPTY, messageSource = messageSource))
             }
             if (request.walletAddress.isBlank()) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_WALLET_ADDRESS_EMPTY))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_WALLET_ADDRESS_EMPTY, messageSource = messageSource))
             }
 
             val result = accountService.importAccount(request)
@@ -46,17 +48,18 @@ class AccountController(
                         is IllegalArgumentException -> ResponseEntity.ok(
                             ApiResponse.error(
                                 ErrorCode.PARAM_ERROR,
-                                e.message
+                                e.message,
+                                messageSource
                             )
                         )
 
-                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_IMPORT_FAILED, e.message))
+                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_IMPORT_FAILED, e.message, messageSource))
                     }
                 }
             )
         } catch (e: Exception) {
             logger.error("导入账户异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_IMPORT_FAILED, e.message))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_IMPORT_FAILED, e.message, messageSource))
         }
     }
 
@@ -77,17 +80,18 @@ class AccountController(
                         is IllegalArgumentException -> ResponseEntity.ok(
                             ApiResponse.error(
                                 ErrorCode.PARAM_ERROR,
-                                e.message
+                                e.message,
+                                messageSource
                             )
                         )
 
-                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_UPDATE_FAILED, e.message))
+                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_UPDATE_FAILED, e.message, messageSource))
                     }
                 }
             )
         } catch (e: Exception) {
             logger.error("更新账户异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_UPDATE_FAILED, e.message))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_UPDATE_FAILED, e.message, messageSource))
         }
     }
 
@@ -108,24 +112,26 @@ class AccountController(
                         is IllegalArgumentException -> ResponseEntity.ok(
                             ApiResponse.error(
                                 ErrorCode.PARAM_ERROR,
-                                e.message
+                                e.message,
+                                messageSource
                             )
                         )
 
                         is IllegalStateException -> ResponseEntity.ok(
                             ApiResponse.error(
                                 ErrorCode.BUSINESS_ERROR,
-                                e.message
+                                e.message,
+                                messageSource
                             )
                         )
 
-                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_DELETE_FAILED, e.message))
+                        else -> ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_DELETE_FAILED, e.message, messageSource))
                     }
                 }
             )
         } catch (e: Exception) {
             logger.error("删除账户异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_DELETE_FAILED, e.message))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_DELETE_FAILED, e.message, messageSource))
         }
     }
 
@@ -142,12 +148,12 @@ class AccountController(
                 },
                 onFailure = { e ->
                     logger.error("查询账户列表失败: ${e.message}", e)
-                    ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_LIST_FETCH_FAILED, e.message))
+                    ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_LIST_FETCH_FAILED, e.message, messageSource))
                 }
             )
         } catch (e: Exception) {
             logger.error("查询账户列表异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_LIST_FETCH_FAILED, e.message))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_LIST_FETCH_FAILED, e.message, messageSource))
         }
     }
 
@@ -168,14 +174,16 @@ class AccountController(
                         is IllegalArgumentException -> ResponseEntity.ok(
                             ApiResponse.error(
                                 ErrorCode.PARAM_ERROR,
-                                e.message
+                                e.message,
+                                messageSource
                             )
                         )
 
                         else -> ResponseEntity.ok(
                             ApiResponse.error(
                                 ErrorCode.SERVER_ACCOUNT_DETAIL_FETCH_FAILED,
-                                e.message
+                                e.message,
+                                messageSource
                             )
                         )
                     }
@@ -183,7 +191,7 @@ class AccountController(
             )
         } catch (e: Exception) {
             logger.error("查询账户详情异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_DETAIL_FETCH_FAILED, e.message))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_DETAIL_FETCH_FAILED, e.message, messageSource))
         }
     }
 
@@ -204,14 +212,16 @@ class AccountController(
                         is IllegalArgumentException -> ResponseEntity.ok(
                             ApiResponse.error(
                                 ErrorCode.PARAM_ERROR,
-                                e.message
+                                e.message,
+                                messageSource
                             )
                         )
 
                         else -> ResponseEntity.ok(
                             ApiResponse.error(
                                 ErrorCode.SERVER_ACCOUNT_BALANCE_FETCH_FAILED,
-                                e.message
+                                e.message,
+                                messageSource
                             )
                         )
                     }
@@ -219,7 +229,7 @@ class AccountController(
             )
         } catch (e: Exception) {
             logger.error("查询账户余额异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_BALANCE_FETCH_FAILED, e.message))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_BALANCE_FETCH_FAILED, e.message, messageSource))
         }
     }
 
@@ -236,12 +246,12 @@ class AccountController(
                 },
                 onFailure = { e ->
                     logger.error("查询仓位列表失败: ${e.message}", e)
-                    ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_POSITIONS_FETCH_FAILED, e.message))
+                    ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_POSITIONS_FETCH_FAILED, e.message, messageSource))
                 }
             )
         } catch (e: Exception) {
             logger.error("查询仓位列表异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_POSITIONS_FETCH_FAILED, e.message))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_POSITIONS_FETCH_FAILED, e.message, messageSource))
         }
     }
 
@@ -253,35 +263,35 @@ class AccountController(
         return try {
             // 参数验证
             if (request.accountId <= 0) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ACCOUNT_ID_INVALID))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ACCOUNT_ID_INVALID, messageSource = messageSource))
             }
             if (request.marketId.isBlank()) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_MARKET_ID_EMPTY))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_MARKET_ID_EMPTY, messageSource = messageSource))
             }
             // side 可以是任意结果名称（如 "YES", "NO", "Pakistan" 等），不再限制为 YES/NO
             if (request.side.isBlank()) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_SIDE_EMPTY))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_SIDE_EMPTY, messageSource = messageSource))
             }
             if (request.orderType !in listOf("MARKET", "LIMIT")) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ORDER_TYPE_MUST_BE_MARKET_OR_LIMIT))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ORDER_TYPE_MUST_BE_MARKET_OR_LIMIT, messageSource = messageSource))
             }
             // 如果传了 percent，不需要校验 quantity；如果没传 percent，必须提供 quantity
             if (request.percent.isNullOrBlank() && request.quantity.isNullOrBlank()) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_QUANTITY_EMPTY))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_QUANTITY_EMPTY, messageSource = messageSource))
             }
             // 如果传了 percent，验证百分比值必须在 0-100 之间（支持小数）
             if (!request.percent.isNullOrBlank()) {
                 try {
                     val percent = request.percent.toSafeBigDecimal()
                     if (percent <= BigDecimal.ZERO || percent > BigDecimal.valueOf(100)) {
-                        return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, "卖出百分比必须在 0-100 之间"))
+                        return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, "卖出百分比必须在 0-100 之间", messageSource))
                     }
                 } catch (e: Exception) {
-                    return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, "卖出百分比格式不正确: ${e.message}"))
+                    return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ERROR, "卖出百分比格式不正确: ${e.message}", messageSource))
                 }
             }
             if (request.orderType == "LIMIT" && (request.price == null || request.price.isBlank())) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_PRICE_EMPTY))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_PRICE_EMPTY, messageSource = messageSource))
             }
 
             val result = runBlocking { accountService.sellPosition(request) }
@@ -295,21 +305,24 @@ class AccountController(
                         is IllegalArgumentException -> ResponseEntity.ok(
                             ApiResponse.error(
                                 ErrorCode.PARAM_ERROR,
-                                e.message
+                                e.message,
+                                messageSource
                             )
                         )
 
                         is IllegalStateException -> ResponseEntity.ok(
                             ApiResponse.error(
                                 ErrorCode.BUSINESS_ERROR,
-                                e.message
+                                e.message,
+                                messageSource
                             )
                         )
 
                         else -> ResponseEntity.ok(
                             ApiResponse.error(
                                 ErrorCode.SERVER_ACCOUNT_ORDER_CREATE_FAILED,
-                                e.message
+                                e.message,
+                                messageSource
                             )
                         )
                     }
@@ -317,7 +330,7 @@ class AccountController(
             )
         } catch (e: Exception) {
             logger.error("创建卖出订单异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_ORDER_CREATE_FAILED, e.message))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_ORDER_CREATE_FAILED, e.message, messageSource))
         }
     }
 
@@ -338,14 +351,16 @@ class AccountController(
                         is IllegalArgumentException -> ResponseEntity.ok(
                             ApiResponse.error(
                                 ErrorCode.PARAM_ERROR,
-                                e.message
+                                e.message,
+                                messageSource
                             )
                         )
 
                         else -> ResponseEntity.ok(
                             ApiResponse.error(
                                 ErrorCode.SERVER_ERROR,
-                                "获取可赎回仓位统计失败: ${e.message}"
+                                "获取可赎回仓位统计失败: ${e.message}",
+                                messageSource
                             )
                         )
                     }
@@ -353,7 +368,7 @@ class AccountController(
             )
         } catch (e: Exception) {
             logger.error("获取可赎回仓位统计异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "获取可赎回仓位统计失败: ${e.message}"))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ERROR, "获取可赎回仓位统计失败: ${e.message}", messageSource))
         }
     }
 
@@ -365,19 +380,19 @@ class AccountController(
         return try {
             // 参数验证
             if (request.positions.isEmpty()) {
-                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_REDEEM_POSITIONS_EMPTY))
+                return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_REDEEM_POSITIONS_EMPTY, messageSource = messageSource))
             }
 
             // 验证每个仓位项
             for (item in request.positions) {
                 if (item.accountId <= 0) {
-                    return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ACCOUNT_ID_INVALID))
+                    return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_ACCOUNT_ID_INVALID, messageSource = messageSource))
                 }
                 if (item.marketId.isBlank()) {
-                    return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_MARKET_ID_EMPTY))
+                    return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_MARKET_ID_EMPTY, messageSource = messageSource))
                 }
                 if (item.outcomeIndex < 0) {
-                    return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_INDEX_SETS_INVALID))
+                    return ResponseEntity.ok(ApiResponse.error(ErrorCode.PARAM_INDEX_SETS_INVALID, messageSource = messageSource))
                 }
             }
 
@@ -392,21 +407,24 @@ class AccountController(
                         is IllegalArgumentException -> ResponseEntity.ok(
                             ApiResponse.error(
                                 ErrorCode.PARAM_ERROR,
-                                e.message
+                                e.message,
+                                messageSource
                             )
                         )
 
                         is IllegalStateException -> ResponseEntity.ok(
                             ApiResponse.error(
                                 ErrorCode.BUSINESS_ERROR,
-                                e.message
+                                e.message,
+                                messageSource
                             )
                         )
 
                         else -> ResponseEntity.ok(
                             ApiResponse.error(
                                 ErrorCode.SERVER_ACCOUNT_REDEEM_POSITIONS_FAILED,
-                                e.message
+                                e.message,
+                                messageSource
                             )
                         )
                     }
@@ -414,7 +432,7 @@ class AccountController(
             )
         } catch (e: Exception) {
             logger.error("赎回仓位异常: ${e.message}", e)
-            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_REDEEM_POSITIONS_FAILED, e.message))
+            ResponseEntity.ok(ApiResponse.error(ErrorCode.SERVER_ACCOUNT_REDEEM_POSITIONS_FAILED, e.message, messageSource))
         }
     }
 

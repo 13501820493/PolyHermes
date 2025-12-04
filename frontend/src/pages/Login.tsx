@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useNavigate, Link } from 'react-router-dom'
 import { Card, Form, Input, Button, message, Typography } from 'antd'
 import { UserOutlined, LockOutlined } from '@ant-design/icons'
+import { useTranslation } from 'react-i18next'
 import { apiService } from '../services/api'
 import { setToken } from '../utils'
 import { useMediaQuery } from 'react-responsive'
@@ -9,6 +10,7 @@ import { useMediaQuery } from 'react-responsive'
 const { Title } = Typography
 
 const Login: React.FC = () => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const isMobile = useMediaQuery({ maxWidth: 768 })
   const [loading, setLoading] = useState(false)
@@ -21,15 +23,15 @@ const Login: React.FC = () => {
       if (response.data.code === 0 && response.data.data) {
         const token = response.data.data.token
         setToken(token)
-        message.success('登录成功')
+        message.success(t('message.loginSuccess'))
         // 跳转到首页
         navigate('/')
       } else {
-        message.error(response.data.msg || '登录失败')
+        message.error(response.data.msg || t('message.loginFailed'))
       }
     } catch (error: any) {
       console.error('登录失败:', error)
-      const errorMsg = error.response?.data?.msg || error.message || '登录失败'
+      const errorMsg = error.response?.data?.msg || error.message || t('message.loginFailed')
       message.error(errorMsg)
     } finally {
       setLoading(false)
@@ -52,7 +54,7 @@ const Login: React.FC = () => {
         }}
       >
         <Title level={2} style={{ textAlign: 'center', marginBottom: '32px' }}>
-          登录
+          {t('login.title')}
         </Title>
         <Form
           form={form}
@@ -62,25 +64,27 @@ const Login: React.FC = () => {
         >
           <Form.Item
             name="username"
+            label={t('login.username')}
             rules={[
-              { required: true, message: '请输入用户名' }
+              { required: true, message: t('login.usernameRequired') }
             ]}
           >
             <Input
               prefix={<UserOutlined />}
-              placeholder="用户名"
+              placeholder={t('login.usernamePlaceholder')}
               autoComplete="username"
             />
           </Form.Item>
           <Form.Item
             name="password"
+            label={t('login.password')}
             rules={[
-              { required: true, message: '请输入密码' }
+              { required: true, message: t('login.passwordRequired') }
             ]}
           >
             <Input.Password
               prefix={<LockOutlined />}
-              placeholder="密码"
+              placeholder={t('login.passwordPlaceholder')}
               autoComplete="current-password"
             />
           </Form.Item>
@@ -92,12 +96,12 @@ const Login: React.FC = () => {
               loading={loading}
               size={isMobile ? 'large' : 'middle'}
             >
-              登录
+              {t('login.title')}
             </Button>
           </Form.Item>
           <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
             <Link to="/reset-password" style={{ fontSize: isMobile ? '14px' : '13px' }}>
-              忘记密码？重置密码
+              {t('login.forgotPassword')}
             </Link>
           </Form.Item>
         </Form>
@@ -107,4 +111,3 @@ const Login: React.FC = () => {
 }
 
 export default Login
-

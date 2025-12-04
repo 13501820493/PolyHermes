@@ -2,6 +2,7 @@ import axios, { AxiosInstance, AxiosError } from 'axios'
 import type { ApiResponse } from '../types'
 import { getToken, setToken, removeToken } from '../utils'
 import { wsManager } from './websocket'
+import i18n from '../i18n/config'
 
 /**
  * API 基础配置
@@ -36,6 +37,9 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
     }
+    // 添加语言 Header
+    const language = i18n.language || 'en'
+    config.headers['X-Language'] = language
     return config
   },
   (error) => {
@@ -473,5 +477,5 @@ export const apiService = {
   }
 }
 
-export default apiClient
+export default apiService
 

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
 import { Layout as AntLayout, Menu, Drawer, Button, Modal } from 'antd'
+import { useTranslation } from 'react-i18next'
 import { useMediaQuery } from 'react-responsive'
 import {
   WalletOutlined,
@@ -15,7 +16,9 @@ import {
   LogoutOutlined,
   SettingOutlined,
   GithubOutlined,
-  TwitterOutlined
+  TwitterOutlined,
+  GlobalOutlined,
+  CheckCircleOutlined
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import type { ReactNode } from 'react'
@@ -29,6 +32,7 @@ interface LayoutProps {
 }
 
 const Layout: React.FC<LayoutProps> = ({ children }) => {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
   const isMobile = useMediaQuery({ maxWidth: 768 })
@@ -46,6 +50,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (path.startsWith('/leaders') || path.startsWith('/templates') || path.startsWith('/copy-trading')) {
       keys.push('/copy-trading-management')
     }
+    if (path.startsWith('/system-settings')) {
+      keys.push('/system-settings')
+    }
     return keys
   }
   
@@ -58,6 +65,9 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     if (path.startsWith('/leaders') || path.startsWith('/templates') || path.startsWith('/copy-trading')) {
       keys.push('/copy-trading-management')
     }
+    if (path.startsWith('/system-settings')) {
+      keys.push('/system-settings')
+    }
     setOpenKeys(keys)
   }, [location.pathname])
   
@@ -65,54 +75,71 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
     {
       key: '/accounts',
       icon: <WalletOutlined />,
-      label: '账户管理'
+      label: t('menu.accounts')
     },
     {
       key: '/copy-trading-management',
       icon: <AppstoreOutlined />,
-      label: '跟单交易',
+      label: t('menu.copyTrading'),
       children: [
         {
           key: '/leaders',
           icon: <UserOutlined />,
-          label: 'Leader 管理'
+          label: t('menu.leaders')
         },
         {
           key: '/templates',
           icon: <FileTextOutlined />,
-          label: '跟单模板'
+          label: t('menu.templates')
         },
         {
           key: '/copy-trading',
           icon: <LinkOutlined />,
-          label: '跟单配置'
+          label: t('menu.copyTradingConfig')
         }
       ]
     },
     {
       key: '/positions',
       icon: <UnorderedListOutlined />,
-      label: '仓位管理'
+      label: t('menu.positions')
     },
     {
       key: '/statistics',
       icon: <BarChartOutlined />,
-      label: '统计信息'
+      label: t('menu.statistics')
     },
     {
       key: '/users',
       icon: <TeamOutlined />,
-      label: '用户管理'
+      label: t('menu.users')
     },
     {
       key: '/system-settings',
       icon: <SettingOutlined />,
-      label: '系统管理'
+      label: t('menu.systemSettings'),
+      children: [
+        {
+          key: '/system-settings/language',
+          icon: <GlobalOutlined />,
+          label: t('menu.language')
+        },
+        {
+          key: '/system-settings/api-health',
+          icon: <CheckCircleOutlined />,
+          label: t('menu.apiHealth')
+        },
+        {
+          key: '/system-settings/proxy',
+          icon: <LinkOutlined />,
+          label: t('menu.proxy')
+        }
+      ]
     },
     {
       key: 'logout',
       icon: <LogoutOutlined />,
-      label: '退出登录'
+      label: t('menu.logout')
     }
   ]
   
@@ -125,10 +152,10 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   
   const handleLogoutConfirm = () => {
     Modal.confirm({
-      title: '确认退出',
-      content: '确定要退出登录吗？',
-      okText: '确定',
-      cancelText: '取消',
+      title: t('menu.logoutConfirm'),
+      content: t('menu.logoutConfirmDesc'),
+      okText: t('common.confirm'),
+      cancelText: t('common.cancel'),
       onOk: () => {
         handleLogout()
         if (isMobile) {
@@ -140,7 +167,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   
   const handleMenuClick = ({ key }: { key: string }) => {
     // 如果是父菜单，不导航
-    if (key === '/copy-trading-management') {
+    if (key === '/copy-trading-management' || key === '/system-settings') {
       return
     }
     
@@ -207,7 +234,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           {children}
         </Content>
         <Drawer
-          title="导航菜单"
+          title={t('menu.navigation')}
           placement="left"
           onClose={() => setMobileMenuOpen(false)}
           open={mobileMenuOpen}
@@ -253,7 +280,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           flexShrink: 0
         }}>
           <span>PolyHermes</span>
-          <div style={{ display: 'flex', gap: '12px' }}>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
             <a
               href="https://github.com/WrBug/PolyHermes"
               target="_blank"
