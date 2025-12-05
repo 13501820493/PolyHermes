@@ -208,7 +208,9 @@ class CopyOrderTrackingService(
                     val tokenId = tokenIdResult.getOrNull() ?: continue
 
                     // 过滤条件检查（在计算订单参数之前）
-                    val filterCheck = filterService.checkFilters(copyTrading, tokenId, isBuyOrder = true)
+                    // 传入 Leader 交易价格，用于价格区间检查
+                    val tradePrice = trade.price.toSafeBigDecimal()
+                    val filterCheck = filterService.checkFilters(copyTrading, tokenId, isBuyOrder = true, tradePrice = tradePrice)
                     if (!filterCheck.first) {
                         logger.warn("过滤条件检查失败，跳过创建订单: copyTradingId=${copyTrading.id}, reason=${filterCheck.second}")
 
@@ -1139,6 +1141,7 @@ class CopyOrderTrackingService(
      */
     private fun extractFilterType(filterReason: String): String {
         return when {
+            filterReason.contains("价格低于最低限制", ignoreCase = true) || filterReason.contains("价格高于最高限制", ignoreCase = true) -> "PRICE_RANGE"
             filterReason.contains("订单深度不足", ignoreCase = true) -> "ORDER_DEPTH"
             filterReason.contains("价差过大", ignoreCase = true) -> "SPREAD"
             filterReason.contains("订单簿深度不足", ignoreCase = true) -> "ORDERBOOK_DEPTH"

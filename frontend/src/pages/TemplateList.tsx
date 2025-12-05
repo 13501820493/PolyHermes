@@ -71,7 +71,12 @@ const TemplateList: React.FC = () => {
       minOrderSize: template.minOrderSize ? parseFloat(template.minOrderSize) : undefined,
       maxDailyOrders: template.maxDailyOrders,
       priceTolerance: parseFloat(template.priceTolerance),
-      supportSell: template.supportSell
+      supportSell: template.supportSell,
+      minOrderDepth: template.minOrderDepth ? parseFloat(template.minOrderDepth) : undefined,
+      maxSpread: template.maxSpread ? parseFloat(template.maxSpread) : undefined,
+      minOrderbookDepth: template.minOrderbookDepth ? parseFloat(template.minOrderbookDepth) : undefined,
+      minPrice: template.minPrice ? parseFloat(template.minPrice) : undefined,
+      maxPrice: template.maxPrice ? parseFloat(template.maxPrice) : undefined
     })
     
     setCopyModalVisible(true)
@@ -114,7 +119,12 @@ const TemplateList: React.FC = () => {
         minOrderSize: values.copyMode === 'RATIO' ? values.minOrderSize?.toString() : undefined,
         maxDailyOrders: values.maxDailyOrders,
         priceTolerance: values.priceTolerance?.toString(),
-        supportSell: values.supportSell !== false
+        supportSell: values.supportSell !== false,
+        minOrderDepth: values.minOrderDepth?.toString(),
+        maxSpread: values.maxSpread?.toString(),
+        minOrderbookDepth: values.minOrderbookDepth?.toString(),
+        minPrice: values.minPrice?.toString(),
+        maxPrice: values.maxPrice?.toString()
       })
       
       if (response.data.code === 0) {
@@ -596,6 +606,82 @@ const TemplateList: React.FC = () => {
             valuePropName="checked"
           >
             <Switch />
+          </Form.Item>
+          
+          <Divider>过滤条件（可选）</Divider>
+          
+          <Form.Item
+            label="最小订单深度 (USDC)"
+            name="minOrderDepth"
+            tooltip="最小订单深度（USDC金额），NULL表示不启用此过滤。确保市场有足够的流动性"
+          >
+            <InputNumber
+              min={0}
+              step={0.0001}
+              precision={4}
+              style={{ width: '100%' }}
+              placeholder="例如：100（可选，不填写表示不启用）"
+            />
+          </Form.Item>
+          
+          <Form.Item
+            label="最大价差（绝对价格）"
+            name="maxSpread"
+            tooltip="最大价差（绝对价格），NULL表示不启用此过滤。避免在价差过大的市场跟单"
+          >
+            <InputNumber
+              min={0}
+              step={0.0001}
+              precision={4}
+              style={{ width: '100%' }}
+              placeholder="例如：0.05（5美分，可选，不填写表示不启用）"
+            />
+          </Form.Item>
+          
+          <Form.Item
+            label="最小订单簿深度 (USDC)"
+            name="minOrderbookDepth"
+            tooltip="最小订单簿深度（USDC金额），NULL表示不启用此过滤。检查前 N 档的深度"
+          >
+            <InputNumber
+              min={0}
+              step={0.0001}
+              precision={4}
+              style={{ width: '100%' }}
+              placeholder="例如：50（可选，不填写表示不启用）"
+            />
+          </Form.Item>
+          
+          <Divider>价格区间过滤</Divider>
+          
+          <Form.Item
+            label="价格区间"
+            name="priceRange"
+            tooltip="仅跟单 Leader 交易价格在指定区间内的订单。不填写表示不限制。示例：填写 0.11 和 0.89 表示仅跟单价格在 0.11 到 0.89 之间的订单；只填写最高价 0.89 表示仅跟单价格在 0.89 以下的订单；只填写最低价 0.11 表示仅跟单价格在 0.11 以上的订单。"
+          >
+            <Input.Group compact style={{ display: 'flex' }}>
+              <Form.Item name="minPrice" noStyle>
+                <InputNumber
+                  min={0.01}
+                  max={0.99}
+                  step={0.0001}
+                  precision={4}
+                  style={{ width: '50%' }}
+                  placeholder="最低价（留空不限制）"
+                />
+              </Form.Item>
+              <span style={{ display: 'inline-block', width: '20px', textAlign: 'center', lineHeight: '32px' }}>-</span>
+              <Form.Item name="maxPrice" noStyle>
+                <InputNumber
+                  min={0.01}
+                  max={0.99}
+                  step={0.0001}
+                  precision={4}
+                  style={{ width: '50%' }}
+                  placeholder="最高价（留空不限制）"
+                />
+              </Form.Item>
+            </Input.Group>
           </Form.Item>
           
           <Form.Item shouldUpdate>

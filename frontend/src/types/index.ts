@@ -111,6 +111,8 @@ export interface CopyTradingTemplate {
   minOrderDepth?: string
   maxSpread?: string
   minOrderbookDepth?: string
+  minPrice?: string  // 最低价格（可选），NULL表示不限制最低价
+  maxPrice?: string  // 最高价格（可选），NULL表示不限制最高价
   createdAt: number
   updatedAt: number
 }
@@ -201,6 +203,8 @@ export interface CopyTrading {
   minOrderDepth?: string
   maxSpread?: string
   minOrderbookDepth?: string
+  minPrice?: string  // 最低价格（可选），NULL表示不限制最低价
+  maxPrice?: string  // 最高价格（可选），NULL表示不限制最高价
   createdAt: number
   updatedAt: number
 }
@@ -240,6 +244,8 @@ export interface CopyTradingCreateRequest {
   minOrderDepth?: string
   maxSpread?: string
   minOrderbookDepth?: string
+  minPrice?: string  // 最低价格（可选），NULL表示不限制最低价
+  maxPrice?: string  // 最高价格（可选），NULL表示不限制最高价
 }
 
 /**
@@ -267,6 +273,8 @@ export interface CopyTradingUpdateRequest {
   minOrderDepth?: string
   maxSpread?: string
   minOrderbookDepth?: string
+  minPrice?: string  // 最低价格（可选），NULL表示不限制最低价
+  maxPrice?: string  // 最高价格（可选），NULL表示不限制最高价
 }
 
 /**
@@ -570,8 +578,6 @@ export interface CopyTradingStatistics {
   accountName: string | null
   leaderId: number
   leaderName: string | null
-  templateId: number
-  templateName: string | null
   enabled: boolean
   
   // 买入统计
@@ -587,7 +593,7 @@ export interface CopyTradingStatistics {
   
   // 持仓统计
   currentPositionQuantity: string
-  currentPositionValue: string
+  currentPositionValue: string  // 当前实现总是返回 "0"，保留用于未来扩展
   
   // 盈亏统计
   totalRealizedPnl: string

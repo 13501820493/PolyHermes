@@ -30,12 +30,21 @@ class CopyTradingFilterService(
     suspend fun checkFilters(
         copyTrading: CopyTrading,
         tokenId: String,
-        isBuyOrder: Boolean
+        isBuyOrder: Boolean,
+        tradePrice: BigDecimal? = null  // Leader 交易价格，用于价格区间检查
     ): Pair<Boolean, String> {
-        // 1. 价格合理性检查（基础检查，无需配置）
+        // 1. 价格区间检查（如果配置了价格区间）
+        if (tradePrice != null) {
+            val priceRangeCheck = checkPriceRange(copyTrading, tradePrice)
+            if (!priceRangeCheck.first) {
+                return priceRangeCheck
+            }
+        }
+        
+        // 2. 价格合理性检查（基础检查，无需配置）
         // 这个检查在获取订单簿时进行，如果价格不在 0.01-0.99 范围内，订单簿获取会失败
         
-        // 2. 获取订单簿
+        // 3. 获取订单簿
         val orderbookResult = clobService.getOrderbookByTokenId(tokenId)
         if (!orderbookResult.isSuccess) {
             val error = orderbookResult.exceptionOrNull()
@@ -47,22 +56,50 @@ class CopyTradingFilterService(
             return Pair(false, "订单簿为空")
         }
         
-        // 3. 买一卖一价差过滤
+        // 4. 买一卖一价差过滤
         val spreadCheck = checkSpread(copyTrading, orderbook)
         if (!spreadCheck.first) {
             return spreadCheck
         }
         
-        // 4. 订单深度过滤
+        // 5. 订单深度过滤
         val depthCheck = checkOrderDepth(copyTrading, orderbook, isBuyOrder)
         if (!depthCheck.first) {
             return depthCheck
         }
         
-        // 5. 最小订单簿深度过滤（可选）
+        // 6. 最小订单簿深度过滤（可选）
         val orderbookDepthCheck = checkOrderbookDepth(copyTrading, orderbook, isBuyOrder)
         if (!orderbookDepthCheck.first) {
             return orderbookDepthCheck
+        }
+        
+        return Pair(true, "")
+    }
+    
+    /**
+     * 检查价格区间
+     * @param copyTrading 跟单配置
+     * @param tradePrice Leader 交易价格
+     * @return Pair<是否通过, 失败原因>
+     */
+    private fun checkPriceRange(
+        copyTrading: CopyTrading,
+        tradePrice: BigDecimal
+    ): Pair<Boolean, String> {
+        // 如果未配置价格区间，直接通过
+        if (copyTrading.minPrice == null && copyTrading.maxPrice == null) {
+            return Pair(true, "")
+        }
+        
+        // 检查最低价格
+        if (copyTrading.minPrice != null && tradePrice.lt(copyTrading.minPrice)) {
+            return Pair(false, "价格低于最低限制: $tradePrice < ${copyTrading.minPrice}")
+        }
+        
+        // 检查最高价格
+        if (copyTrading.maxPrice != null && tradePrice.gt(copyTrading.maxPrice)) {
+            return Pair(false, "价格高于最高限制: $tradePrice > ${copyTrading.maxPrice}")
         }
         
         return Pair(true, "")

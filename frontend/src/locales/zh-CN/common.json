@@ -23,7 +23,11 @@
     "loading": "加载中",
     "noData": "暂无数据",
     "saveConfig": "保存配置",
-    "refreshConfig": "刷新配置"
+    "refreshConfig": "刷新配置",
+    "total": "共",
+    "items": "条",
+    "prev": "上一页",
+    "next": "下一页"
   },
   "login": {
     "title": "登录",
@@ -390,6 +394,11 @@
     "minOrderbookDepth": "最小订单簿深度 (USDC)",
     "minOrderbookDepthTooltip": "最小订单簿深度（USDC金额），NULL表示不启用此过滤。检查前 N 档的深度",
     "minOrderbookDepthPlaceholder": "例如：50（可选，不填写表示不启用）",
+    "priceRangeFilter": "价格区间过滤",
+    "priceRange": "价格区间",
+    "priceRangeTooltip": "仅跟单 Leader 交易价格在指定区间内的订单。不填写表示不限制。示例：填写 0.11 和 0.89 表示仅跟单价格在 0.11 到 0.89 之间的订单；只填写最高价 0.89 表示仅跟单价格在 0.89 以下的订单；只填写最低价 0.11 表示仅跟单价格在 0.11 以上的订单。",
+    "minPricePlaceholder": "最低价（留空不限制）",
+    "maxPricePlaceholder": "最高价（留空不限制）",
     "supportSell": "跟单卖出",
     "supportSellTooltip": "是否跟单 Leader 的卖出订单。开启：跟单 Leader 的买入和卖出订单；关闭：只跟单 Leader 的买入订单，忽略卖出订单。",
     "create": "创建模板",
@@ -442,6 +451,11 @@
     "minOrderbookDepth": "最小订单簿深度 (USDC)",
     "minOrderbookDepthTooltip": "最小订单簿深度（USDC金额），NULL表示不启用此过滤。检查前 N 档的深度",
     "minOrderbookDepthPlaceholder": "例如：50（可选，不填写表示不启用）",
+    "priceRangeFilter": "价格区间过滤",
+    "priceRange": "价格区间",
+    "priceRangeTooltip": "仅跟单 Leader 交易价格在指定区间内的订单。不填写表示不限制。示例：填写 0.11 和 0.89 表示仅跟单价格在 0.11 到 0.89 之间的订单；只填写最高价 0.89 表示仅跟单价格在 0.89 以下的订单；只填写最低价 0.11 表示仅跟单价格在 0.11 以上的订单。",
+    "minPricePlaceholder": "最低价（留空不限制）",
+    "maxPricePlaceholder": "最高价（留空不限制）",
     "supportSell": "跟单卖出",
     "supportSellTooltip": "是否跟单 Leader 的卖出订单。开启：跟单 Leader 的买入和卖出订单；关闭：只跟单 Leader 的买入订单，忽略卖出订单。",
     "invalidNumber": "请输入有效的数字"
@@ -502,6 +516,11 @@
     "minOrderbookDepth": "最小订单簿深度 (USDC)",
     "minOrderbookDepthTooltip": "最小订单簿深度（USDC金额），NULL表示不启用此过滤。检查前 N 档的深度",
     "minOrderbookDepthPlaceholder": "例如：50（可选，不填写表示不启用）",
+    "priceRangeFilter": "价格区间过滤",
+    "priceRange": "价格区间",
+    "priceRangeTooltip": "仅跟单 Leader 交易价格在指定区间内的订单。不填写表示不限制。示例：填写 0.11 和 0.89 表示仅跟单价格在 0.11 到 0.89 之间的订单；只填写最高价 0.89 表示仅跟单价格在 0.89 以下的订单；只填写最低价 0.11 表示仅跟单价格在 0.11 以上的订单。",
+    "minPricePlaceholder": "最低价（留空不限制）",
+    "maxPricePlaceholder": "最高价（留空不限制）",
     "supportSell": "跟单卖出",
     "supportSellTooltip": "是否跟单 Leader 的卖出订单",
     "create": "创建跟单配置",
@@ -560,6 +579,11 @@
     "minOrderbookDepth": "最小订单簿深度 (USDC)",
     "minOrderbookDepthTooltip": "最小订单簿深度（USDC金额），NULL表示不启用此过滤",
     "minOrderbookDepthPlaceholder": "例如：50（可选，不填写表示不启用）",
+    "priceRangeFilter": "价格区间过滤",
+    "priceRange": "价格区间",
+    "priceRangeTooltip": "仅跟单 Leader 交易价格在指定区间内的订单。不填写表示不限制。示例：填写 0.11 和 0.89 表示仅跟单价格在 0.11 到 0.89 之间的订单；只填写最高价 0.89 表示仅跟单价格在 0.89 以下的订单；只填写最低价 0.11 表示仅跟单价格在 0.11 以上的订单。",
+    "minPricePlaceholder": "最低价（留空不限制）",
+    "maxPricePlaceholder": "最高价（留空不限制）",
     "supportSell": "跟单卖出",
     "supportSellTooltip": "是否跟单 Leader 的卖出订单",
     "save": "保存",
@@ -569,8 +593,8 @@
     "invalidNumber": "请输入有效的数字"
   },
   "filteredOrdersList": {
-    "title": "被过滤订单列表",
-    "fetchFailed": "获取被过滤订单列表失败",
+    "title": "已过滤订单列表",
+    "fetchFailed": "获取已过滤订单列表失败",
     "market": "市场",
     "outcome": "方向",
     "price": "价格",
@@ -589,8 +613,10 @@
       "marketStatus": "市场状态不可交易",
       "orderbookError": "订单簿获取失败",
       "orderbookEmpty": "订单簿为空",
+      "priceRange": "价格区间不符",
       "unknown": "未知原因"
-    }
+    },
+    "noData": "暂无已过滤订单"
   },
   "copyTradingList": {
     "title": "跟单配置管理",
@@ -611,7 +637,7 @@
     "buyOrders": "买入订单",
     "sellOrders": "卖出订单",
     "matchedOrders": "匹配关系",
-    "filteredOrders": "被过滤订单",
+    "filteredOrders": "已过滤订单",
     "filterWallet": "筛选钱包",
     "filterTemplate": "筛选模板",
     "filterLeader": "筛选 Leader",

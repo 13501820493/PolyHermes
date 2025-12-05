@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Card, Form, Input, Button, Radio, InputNumber, Switch, message, Typography, Space } from 'antd'
+import { Card, Form, Input, Button, Radio, InputNumber, Switch, message, Typography, Space, Divider } from 'antd'
 import { ArrowLeftOutlined, SaveOutlined } from '@ant-design/icons'
 import { apiService } from '../services/api'
 import { useTranslation } from 'react-i18next'
@@ -54,7 +54,9 @@ const TemplateAdd: React.FC = () => {
         supportSell: values.supportSell !== false,
         minOrderDepth: values.minOrderDepth?.toString(),
         maxSpread: values.maxSpread?.toString(),
-        minOrderbookDepth: values.minOrderbookDepth?.toString()
+        minOrderbookDepth: values.minOrderbookDepth?.toString(),
+        minPrice: values.minPrice?.toString(),
+        maxPrice: values.maxPrice?.toString()
       })
       
       if (response.data.code === 0) {
@@ -293,6 +295,38 @@ const TemplateAdd: React.FC = () => {
               style={{ width: '100%' }}
               placeholder={t('templateAdd.minOrderbookDepthPlaceholder') || '例如：50（可选，不填写表示不启用）'}
             />
+          </Form.Item>
+          
+          <Divider>{t('templateAdd.priceRangeFilter') || '价格区间过滤'}</Divider>
+          
+          <Form.Item
+            label={t('templateAdd.priceRange') || '价格区间'}
+            name="priceRange"
+            tooltip={t('templateAdd.priceRangeTooltip') || '配置价格区间，仅在指定价格区间内的订单才会下单。例如：0.11-0.89 表示区间在0.11和0.89之间；-0.89 表示0.89以下都可以；0.11- 表示0.11以上都可以'}
+          >
+            <Input.Group compact style={{ display: 'flex' }}>
+              <Form.Item name="minPrice" noStyle>
+                <InputNumber
+                  min={0.01}
+                  max={0.99}
+                  step={0.0001}
+                  precision={4}
+                  style={{ width: '50%' }}
+                  placeholder={t('templateAdd.minPricePlaceholder') || '最低价（可选）'}
+                />
+              </Form.Item>
+              <span style={{ display: 'inline-block', width: '20px', textAlign: 'center', lineHeight: '32px' }}>-</span>
+              <Form.Item name="maxPrice" noStyle>
+                <InputNumber
+                  min={0.01}
+                  max={0.99}
+                  step={0.0001}
+                  precision={4}
+                  style={{ width: '50%' }}
+                  placeholder={t('templateAdd.maxPricePlaceholder') || '最高价（可选）'}
+                />
+              </Form.Item>
+            </Input.Group>
           </Form.Item>
           
           {/* 跟单卖出 - 表单最底部 */}

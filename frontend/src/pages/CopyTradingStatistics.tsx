@@ -110,7 +110,7 @@ const CopyTradingStatisticsPage: React.FC = () => {
               </div>
             </div>
           </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={8}>
             <div>
               <div style={{ color: '#999', fontSize: 14, marginBottom: 4 }}>Leader 名称</div>
               <div style={{ fontSize: 16, fontWeight: 500 }}>
@@ -118,15 +118,7 @@ const CopyTradingStatisticsPage: React.FC = () => {
               </div>
             </div>
           </Col>
-          <Col xs={24} sm={12} md={6}>
-            <div>
-              <div style={{ color: '#999', fontSize: 14, marginBottom: 4 }}>模板名称</div>
-              <div style={{ fontSize: 16, fontWeight: 500 }}>
-                {statistics.templateName || `模板 ${statistics.templateId}`}
-              </div>
-            </div>
-          </Col>
-          <Col xs={24} sm={12} md={6}>
+          <Col xs={24} sm={12} md={8}>
             <div>
               <div style={{ color: '#999', fontSize: 14, marginBottom: 4 }}>跟单状态</div>
               <div>
@@ -203,21 +195,14 @@ const CopyTradingStatisticsPage: React.FC = () => {
       {/* 持仓统计卡片 */}
       <Card title="持仓统计" style={{ marginBottom: 16 }}>
         <Row gutter={[16, 16]}>
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} md={12}>
             <Statistic
               title="当前持仓数量"
               value={formatUSDC(statistics.currentPositionQuantity)}
               suffix=""
             />
           </Col>
-          <Col xs={24} sm={12} md={8}>
-            <Statistic
-              title="当前持仓价值"
-              value={formatUSDC(statistics.currentPositionValue)}
-              suffix="USDC"
-            />
-          </Col>
-          <Col xs={24} sm={12} md={8}>
+          <Col xs={24} sm={12} md={12}>
             <Statistic
               title="平均买入价格"
               value={formatUSDC(statistics.avgBuyPrice)}

@@ -29,7 +29,8 @@ class CopyTradingStatisticsService(
     private val sellMatchDetailRepository: SellMatchDetailRepository,
     private val accountRepository: AccountRepository,
     private val leaderRepository: LeaderRepository,
-    private val accountService: AccountService
+    private val accountService: AccountService,
+    private val blockchainService: com.wrbug.polymarketbot.service.BlockchainService
 ) {
     
     private val logger = LoggerFactory.getLogger(CopyTradingStatisticsService::class.java)
@@ -59,11 +60,14 @@ class CopyTradingStatisticsService(
             // 6. 计算统计信息
             val statistics = calculateStatistics(buyOrders, sellRecords, matchDetails)
             
-            // 7. 获取当前市场价格（用于计算未实现盈亏）
+            // 7. 获取链上实际持仓（用于准确计算未实现盈亏，考虑手动卖出的情况）
+            val actualPositions = getActualPositions(account)
+            
+            // 8. 获取当前市场价格（用于计算未实现盈亏）
             val currentPrice = getCurrentMarketPrice(buyOrders)
             
-            // 8. 计算未实现盈亏
-            val unrealizedPnl = calculateUnrealizedPnl(buyOrders, currentPrice)
+            // 9. 计算未实现盈亏（使用链上实际持仓，而不是 remainingQuantity）
+            val unrealizedPnl = calculateUnrealizedPnl(buyOrders, currentPrice, actualPositions)
             
             // 9. 构建响应
             val response = CopyTradingStatisticsResponse(
@@ -314,25 +318,32 @@ class CopyTradingStatisticsService(
     
     /**
      * 获取当前市场价格
+     * 按 (marketId, outcomeIndex) 组合获取价格，支持多元市场
      */
     private suspend fun getCurrentMarketPrice(buyOrders: List<CopyOrderTracking>): Map<String, String> {
         val prices = mutableMapOf<String, String>()
         
-        // 获取所有不同的市场ID
-        val marketIds = buyOrders.map { it.marketId }.distinct()
+        // 获取所有不同的 (marketId, outcomeIndex) 组合
+        val marketOutcomePairs = buyOrders
+            .filter { it.outcomeIndex != null }
+            .map { Pair(it.marketId, it.outcomeIndex!!) }
+            .distinct()
         
-        for (marketId in marketIds) {
+        for ((marketId, outcomeIndex) in marketOutcomePairs) {
             try {
-                val result = accountService.getMarketPrice(marketId)
+                // 传递 outcomeIndex 参数，确保获取对应 outcome 的价格
+                val result = accountService.getMarketPrice(marketId, outcomeIndex)
                 result.onSuccess { response ->
                     // 使用中间价，如果没有则使用最后价格
                     val price = response.midpoint ?: response.lastPrice
                     if (price != null) {
-                        prices[marketId] = price
+                        // 使用 "marketId:outcomeIndex" 作为 key
+                        val key = "$marketId:$outcomeIndex"
+                        prices[key] = price
                     }
                 }
             } catch (e: Exception) {
-                logger.warn("获取市场价格失败: marketId=$marketId", e)
+                logger.warn("获取市场价格失败: marketId=$marketId, outcomeIndex=$outcomeIndex", e)
             }
         }
         
@@ -340,23 +351,71 @@ class CopyTradingStatisticsService(
     }
     
     /**
+     * 获取链上实际持仓
+     * 按 (marketId, outcomeIndex) 组合返回实际持仓数量
+     */
+    private suspend fun getActualPositions(account: com.wrbug.polymarketbot.entity.Account?): Map<String, BigDecimal> {
+        val positions = mutableMapOf<String, BigDecimal>()
+        
+        if (account == null || account.proxyAddress.isBlank()) {
+            return positions
+        }
+        
+        try {
+            val positionsResult = blockchainService.getPositions(account.proxyAddress)
+            if (positionsResult.isSuccess) {
+                val positionList = positionsResult.getOrNull() ?: emptyList()
+                for (pos in positionList) {
+                    // 只处理有 conditionId 和 outcomeIndex 的仓位
+                    if (pos.conditionId != null && pos.outcomeIndex != null && pos.size != null) {
+                        val key = "${pos.conditionId}:${pos.outcomeIndex}"
+                        val size = pos.size.toSafeBigDecimal()
+                        // 如果 size > 0，表示有持仓；如果 size < 0，表示做空（取绝对值）
+                        positions[key] = size.abs()
+                    }
+                }
+            }
+        } catch (e: Exception) {
+            logger.warn("获取链上持仓失败: accountId=${account.id}, error=${e.message}", e)
+        }
+        
+        return positions
+    }
+    
+    /**
      * 计算未实现盈亏
+     * 使用链上实际持仓数量，而不是 remainingQuantity（考虑手动卖出的情况）
      */
     private fun calculateUnrealizedPnl(
         buyOrders: List<CopyOrderTracking>,
-        currentPrices: Map<String, String>
+        currentPrices: Map<String, String>,
+        actualPositions: Map<String, BigDecimal>
     ): String {
         var totalUnrealizedPnl = BigDecimal.ZERO
         
         for (order in buyOrders) {
-            val remainingQty = order.remainingQuantity.toSafeBigDecimal()
-            if (remainingQty.lte(BigDecimal.ZERO)) continue
+            // 如果没有 outcomeIndex，跳过（无法确定价格和持仓）
+            if (order.outcomeIndex == null) {
+                logger.warn("订单缺少 outcomeIndex，跳过未实现盈亏计算: orderId=${order.buyOrderId}, marketId=${order.marketId}")
+                continue
+            }
             
-            val currentPrice = currentPrices[order.marketId]?.toSafeBigDecimal()
+            // 使用 "marketId:outcomeIndex" 作为 key
+            val key = "${order.marketId}:${order.outcomeIndex}"
+            
+            // 获取链上实际持仓数量（如果存在），否则使用 remainingQuantity
+            val actualQty = actualPositions[key] ?: order.remainingQuantity.toSafeBigDecimal()
+            
+            // 如果实际持仓 <= 0，说明已全部卖出（包括手动卖出），跳过未实现盈亏计算
+            if (actualQty.lte(BigDecimal.ZERO)) continue
+            
+            // 获取当前市场价格
+            val currentPrice = currentPrices[key]?.toSafeBigDecimal()
                 ?: continue  // 如果没有当前价格，跳过
             
             val buyPrice = order.price.toSafeBigDecimal()
-            val unrealizedPnl = currentPrice.subtract(buyPrice).multi(remainingQty)
+            // 使用实际持仓数量计算未实现盈亏
+            val unrealizedPnl = currentPrice.subtract(buyPrice).multi(actualQty)
             totalUnrealizedPnl = totalUnrealizedPnl.add(unrealizedPnl)
         }
         

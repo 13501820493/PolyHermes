@@ -26,7 +26,11 @@
     "disabled": "禁用",
     "noData": "暫無數據",
     "saveConfig": "保存配置",
-    "refreshConfig": "刷新配置"
+    "refreshConfig": "刷新配置",
+    "total": "共",
+    "items": "條",
+    "prev": "上一頁",
+    "next": "下一頁"
   },
   "account": {
     "title": "賬戶管理",
@@ -478,6 +482,11 @@
     "minOrderbookDepth": "最小訂單簿深度 (USDC)",
     "minOrderbookDepthTooltip": "最小訂單簿深度（USDC金額），NULL表示不啟用此過濾。檢查前 N 檔的深度",
     "minOrderbookDepthPlaceholder": "例如：50（可選，不填寫表示不啟用）",
+    "priceRangeFilter": "價格區間過濾",
+    "priceRange": "價格區間",
+    "priceRangeTooltip": "僅跟單 Leader 交易價格在指定區間內的訂單。不填寫表示不限制。示例：填寫 0.11 和 0.89 表示僅跟單價格在 0.11 到 0.89 之間的訂單；只填寫最高價 0.89 表示僅跟單價格在 0.89 以下的訂單；只填寫最低價 0.11 表示僅跟單價格在 0.11 以上的訂單。",
+    "minPricePlaceholder": "最低價（留空不限制）",
+    "maxPricePlaceholder": "最高價（留空不限制）",
     "supportSell": "跟單賣出",
     "supportSellTooltip": "是否跟單 Leader 的賣出訂單。開啟：跟單 Leader 的買入和賣出訂單；關閉：只跟單 Leader 的買入訂單，忽略賣出訂單。",
     "create": "創建模板",
@@ -530,6 +539,11 @@
     "minOrderbookDepth": "最小訂單簿深度 (USDC)",
     "minOrderbookDepthTooltip": "最小訂單簿深度（USDC金額），NULL表示不啟用此過濾。檢查前 N 檔的深度",
     "minOrderbookDepthPlaceholder": "例如：50（可選，不填寫表示不啟用）",
+    "priceRangeFilter": "價格區間過濾",
+    "priceRange": "價格區間",
+    "priceRangeTooltip": "僅跟單 Leader 交易價格在指定區間內的訂單。不填寫表示不限制。示例：填寫 0.11 和 0.89 表示僅跟單價格在 0.11 到 0.89 之間的訂單；只填寫最高價 0.89 表示僅跟單價格在 0.89 以下的訂單；只填寫最低價 0.11 表示僅跟單價格在 0.11 以上的訂單。",
+    "minPricePlaceholder": "最低價（留空不限制）",
+    "maxPricePlaceholder": "最高價（留空不限制）",
     "supportSell": "跟單賣出",
     "supportSellTooltip": "是否跟單 Leader 的賣出訂單。開啟：跟單 Leader 的買入和賣出訂單；關閉：只跟單 Leader 的買入訂單，忽略賣出訂單。",
     "invalidNumber": "請輸入有效的數字"
@@ -590,6 +604,11 @@
     "minOrderbookDepth": "最小訂單簿深度 (USDC)",
     "minOrderbookDepthTooltip": "最小訂單簿深度（USDC金額），NULL表示不啟用此過濾。檢查前 N 檔的深度",
     "minOrderbookDepthPlaceholder": "例如：50（可選，不填寫表示不啟用）",
+    "priceRangeFilter": "價格區間過濾",
+    "priceRange": "價格區間",
+    "priceRangeTooltip": "僅跟單 Leader 交易價格在指定區間內的訂單。不填寫表示不限制。示例：填寫 0.11 和 0.89 表示僅跟單價格在 0.11 到 0.89 之間的訂單；只填寫最高價 0.89 表示僅跟單價格在 0.89 以下的訂單；只填寫最低價 0.11 表示僅跟單價格在 0.11 以上的訂單。",
+    "minPricePlaceholder": "最低價（留空不限制）",
+    "maxPricePlaceholder": "最高價（留空不限制）",
     "supportSell": "跟單賣出",
     "supportSellTooltip": "是否跟單 Leader 的賣出訂單",
     "create": "創建跟單配置",
@@ -648,6 +667,11 @@
     "minOrderbookDepth": "最小訂單簿深度 (USDC)",
     "minOrderbookDepthTooltip": "最小訂單簿深度（USDC金額），NULL表示不啟用此過濾",
     "minOrderbookDepthPlaceholder": "例如：50（可選，不填寫表示不啟用）",
+    "priceRangeFilter": "價格區間過濾",
+    "priceRange": "價格區間",
+    "priceRangeTooltip": "僅跟單 Leader 交易價格在指定區間內的訂單。不填寫表示不限制。示例：填寫 0.11 和 0.89 表示僅跟單價格在 0.11 到 0.89 之間的訂單；只填寫最高價 0.89 表示僅跟單價格在 0.89 以下的訂單；只填寫最低價 0.11 表示僅跟單價格在 0.11 以上的訂單。",
+    "minPricePlaceholder": "最低價（留空不限制）",
+    "maxPricePlaceholder": "最高價（留空不限制）",
     "supportSell": "跟單賣出",
     "supportSellTooltip": "是否跟單 Leader 的賣出訂單",
     "save": "保存",
@@ -677,8 +701,10 @@
       "marketStatus": "市場狀態不可交易",
       "orderbookError": "訂單簿獲取失敗",
       "orderbookEmpty": "訂單簿為空",
+      "priceRange": "價格區間不符",
       "unknown": "未知原因"
-    }
+    },
+    "noData": "暫無已過濾訂單"
   },
   "copyTradingList": {
     "title": "跟單配置管理",

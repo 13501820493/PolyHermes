@@ -69,6 +69,12 @@ data class CopyTradingTemplate(
     @Column(name = "min_orderbook_depth", precision = 20, scale = 8)
     val minOrderbookDepth: BigDecimal? = null,  // 最小订单簿深度（USDC金额），NULL表示不启用
     
+    @Column(name = "min_price", precision = 20, scale = 8)
+    val minPrice: BigDecimal? = null,  // 最低价格（可选），NULL表示不限制最低价
+    
+    @Column(name = "max_price", precision = 20, scale = 8)
+    val maxPrice: BigDecimal? = null,  // 最高价格（可选），NULL表示不限制最高价
+    
     @Column(name = "created_at", nullable = false)
     val createdAt: Long = System.currentTimeMillis(),
     

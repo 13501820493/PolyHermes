@@ -5,9 +5,11 @@ import { LeftOutlined } from '@ant-design/icons'
 import { apiService } from '../services/api'
 import { formatUSDC } from '../utils'
 import { useMediaQuery } from 'react-responsive'
+import { useTranslation } from 'react-i18next'
 import type { MatchedOrderInfo, OrderTrackingRequest, OrderTrackingListResponse } from '../types'
 
 const CopyTradingMatchedOrdersPage: React.FC = () => {
+  const { t } = useTranslation()
   const { copyTradingId } = useParams<{ copyTradingId: string }>()
   const navigate = useNavigate()
   const isMobile = useMediaQuery({ maxWidth: 768 })
@@ -153,8 +155,8 @@ const CopyTradingMatchedOrdersPage: React.FC = () => {
       <Card>
         <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-            <Button icon={<LeftOutlined />} onClick={() => navigate(`/copy-trading/statistics/${copyTradingId}`)}>
-              返回统计
+            <Button icon={<LeftOutlined />} onClick={() => navigate(-1)}>
+              {t('common.back') || '返回'}
             </Button>
             <h2 style={{ margin: 0 }}>匹配关系列表</h2>
           </div>

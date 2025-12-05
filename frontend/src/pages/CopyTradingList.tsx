@@ -265,12 +265,6 @@ const CopyTradingList: React.FC = () => {
             type: 'divider'
           },
           {
-            key: 'statistics',
-            label: t('copyTradingList.viewStatistics') || '查看统计',
-            icon: <BarChartOutlined />,
-            onClick: () => navigate(`/copy-trading/statistics/${record.id}`)
-          },
-          {
             key: 'buyOrders',
             label: t('copyTradingList.buyOrders') || '买入订单',
             icon: <UnorderedListOutlined />,
@@ -290,7 +284,7 @@ const CopyTradingList: React.FC = () => {
           },
           {
             key: 'filteredOrders',
-            label: t('copyTradingList.filteredOrders') || '被过滤订单',
+            label: t('copyTradingList.filteredOrders') || '已过滤订单',
             icon: <UnorderedListOutlined />,
             onClick: () => navigate(`/copy-trading/filtered-orders/${record.id}`)
           },
@@ -551,38 +545,46 @@ const CopyTradingList: React.FC = () => {
                         <Button
                           type="primary"
                           size="small"
+                          icon={<EditOutlined />}
+                          onClick={() => navigate(`/copy-trading/edit/${record.id}`)}
+                          style={{ flex: 1, minWidth: '80px' }}
+                        >
+                          {t('common.edit') || '编辑'}
+                        </Button>
+                        <Button
+                          size="small"
                           icon={<BarChartOutlined />}
                           onClick={() => navigate(`/copy-trading/statistics/${record.id}`)}
                           style={{ flex: 1, minWidth: '80px' }}
                         >
-                          统计
+                          {t('copyTradingList.statistics') || '统计'}
                         </Button>
                         <Dropdown 
                           menu={{ 
                             items: [
                               {
-                                key: 'statistics',
-                                label: '查看统计',
-                                icon: <BarChartOutlined />,
-                                onClick: () => navigate(`/copy-trading/statistics/${record.id}`)
-                              },
-                              {
                                 key: 'buyOrders',
-                                label: '买入订单',
+                                label: t('copyTradingList.buyOrders') || '买入订单',
                                 icon: <UnorderedListOutlined />,
                                 onClick: () => navigate(`/copy-trading/orders/buy/${record.id}`)
                               },
                               {
                                 key: 'sellOrders',
-                                label: '卖出订单',
+                                label: t('copyTradingList.sellOrders') || '卖出订单',
                                 icon: <UnorderedListOutlined />,
                                 onClick: () => navigate(`/copy-trading/orders/sell/${record.id}`)
                               },
                               {
                                 key: 'matchedOrders',
-                                label: '匹配关系',
+                                label: t('copyTradingList.matchedOrders') || '匹配关系',
                                 icon: <UnorderedListOutlined />,
                                 onClick: () => navigate(`/copy-trading/orders/matched/${record.id}`)
+                              },
+                              {
+                                key: 'filteredOrders',
+                                label: t('copyTradingList.filteredOrders') || '已过滤订单',
+                                icon: <UnorderedListOutlined />,
+                                onClick: () => navigate(`/copy-trading/filtered-orders/${record.id}`)
                               }
                             ]
                           }} 
@@ -593,14 +595,14 @@ const CopyTradingList: React.FC = () => {
                             icon={<UnorderedListOutlined />}
                             style={{ flex: 1, minWidth: '80px' }}
                           >
-                            订单
+                            {t('copyTradingList.orders') || '订单'}
                           </Button>
                         </Dropdown>
                         <Popconfirm
-                          title="确定要删除这个跟单关系吗？"
+                          title={t('copyTradingList.deleteConfirm') || '确定要删除这个跟单关系吗？'}
                           onConfirm={() => handleDelete(record.id)}
-                          okText="确定"
-                          cancelText="取消"
+                          okText={t('common.confirm') || '确定'}
+                          cancelText={t('common.cancel') || '取消'}
                         >
                           <Button
                             danger
@@ -608,7 +610,7 @@ const CopyTradingList: React.FC = () => {
                             icon={<DeleteOutlined />}
                             style={{ flex: 1, minWidth: '80px' }}
                           >
-                            删除
+                            {t('common.delete') || '删除'}
                           </Button>
                         </Popconfirm>
                       </div>

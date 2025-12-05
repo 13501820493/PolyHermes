@@ -85,6 +85,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       label: t('menu.copyTrading'),
       children: [
         {
+          key: '/copy-trading',
+          icon: <LinkOutlined />,
+          label: t('menu.copyTradingConfig')
+        },
+        {
           key: '/leaders',
           icon: <UserOutlined />,
           label: t('menu.leaders')
@@ -93,11 +98,6 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           key: '/templates',
           icon: <FileTextOutlined />,
           label: t('menu.templates')
-        },
-        {
-          key: '/copy-trading',
-          icon: <LinkOutlined />,
-          label: t('menu.copyTradingConfig')
         }
       ]
     },

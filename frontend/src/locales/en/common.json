@@ -26,7 +26,11 @@
     "disabled": "Disabled",
     "noData": "No Data",
     "saveConfig": "Save Config",
-    "refreshConfig": "Refresh Config"
+    "refreshConfig": "Refresh Config",
+    "total": "Total",
+    "items": "items",
+    "prev": "Previous",
+    "next": "Next"
   },
   "account": {
     "title": "Account Management",
@@ -478,6 +482,11 @@
     "minOrderbookDepth": "Min Orderbook Depth (USDC)",
     "minOrderbookDepthTooltip": "Minimum orderbook depth (USDC amount), NULL means this filter is not enabled. Check depth of first N levels",
     "minOrderbookDepthPlaceholder": "For example: 50 (optional, leave empty to disable)",
+    "priceRangeFilter": "Price Range Filter",
+    "priceRange": "Price Range",
+    "priceRangeTooltip": "Only copy orders where Leader's trade price is within the specified range. Leave empty to disable. Examples: Fill 0.11 and 0.89 means only copy orders with price between 0.11 and 0.89; Fill only max price 0.89 means only copy orders with price below 0.89; Fill only min price 0.11 means only copy orders with price above 0.11.",
+    "minPricePlaceholder": "Min Price (leave empty for no limit)",
+    "maxPricePlaceholder": "Max Price (leave empty for no limit)",
     "supportSell": "Support Sell",
     "supportSellTooltip": "Whether to copy Leader's sell orders. Enabled: copy both Leader's buy and sell orders; Disabled: only copy Leader's buy orders, ignore sell orders.",
     "create": "Create Template",
@@ -530,6 +539,11 @@
     "minOrderbookDepth": "Min Orderbook Depth (USDC)",
     "minOrderbookDepthTooltip": "Minimum orderbook depth (USDC amount), NULL means this filter is not enabled. Check depth of first N levels",
     "minOrderbookDepthPlaceholder": "For example: 50 (optional, leave empty to disable)",
+    "priceRangeFilter": "Price Range Filter",
+    "priceRange": "Price Range",
+    "priceRangeTooltip": "Only copy orders where Leader's trade price is within the specified range. Leave empty to disable. Examples: Fill 0.11 and 0.89 means only copy orders with price between 0.11 and 0.89; Fill only max price 0.89 means only copy orders with price below 0.89; Fill only min price 0.11 means only copy orders with price above 0.11.",
+    "minPricePlaceholder": "Min Price (leave empty for no limit)",
+    "maxPricePlaceholder": "Max Price (leave empty for no limit)",
     "supportSell": "Support Sell",
     "supportSellTooltip": "Whether to copy Leader's sell orders. Enabled: copy both Leader's buy and sell orders; Disabled: only copy Leader's buy orders, ignore sell orders.",
     "invalidNumber": "Please enter a valid number"
@@ -590,6 +604,11 @@
     "minOrderbookDepth": "Min Orderbook Depth (USDC)",
     "minOrderbookDepthTooltip": "Minimum orderbook depth (USDC amount), NULL means this filter is not enabled. Check depth of first N levels",
     "minOrderbookDepthPlaceholder": "For example: 50 (optional, leave empty to disable)",
+    "priceRangeFilter": "Price Range Filter",
+    "priceRange": "Price Range",
+    "priceRangeTooltip": "Only copy orders where Leader's trade price is within the specified range. Leave empty to disable. Examples: Fill 0.11 and 0.89 means only copy orders with price between 0.11 and 0.89; Fill only max price 0.89 means only copy orders with price below 0.89; Fill only min price 0.11 means only copy orders with price above 0.11.",
+    "minPricePlaceholder": "Min Price (leave empty for no limit)",
+    "maxPricePlaceholder": "Max Price (leave empty for no limit)",
     "supportSell": "Support Sell",
     "supportSellTooltip": "Whether to copy Leader's sell orders",
     "create": "Create Copy Trading Config",
@@ -648,6 +667,11 @@
     "minOrderbookDepth": "Min Orderbook Depth (USDC)",
     "minOrderbookDepthTooltip": "Minimum orderbook depth (USDC amount), NULL means this filter is not enabled",
     "minOrderbookDepthPlaceholder": "For example: 50 (optional, leave empty to disable)",
+    "priceRangeFilter": "Price Range Filter",
+    "priceRange": "Price Range",
+    "priceRangeTooltip": "Only copy orders where Leader's trade price is within the specified range. Leave empty to disable. Examples: Fill 0.11 and 0.89 means only copy orders with price between 0.11 and 0.89; Fill only max price 0.89 means only copy orders with price below 0.89; Fill only min price 0.11 means only copy orders with price above 0.11.",
+    "minPricePlaceholder": "Min Price (leave empty for no limit)",
+    "maxPricePlaceholder": "Max Price (leave empty for no limit)",
     "supportSell": "Support Sell",
     "supportSellTooltip": "Whether to copy Leader's sell orders",
     "save": "Save",
@@ -677,8 +701,10 @@
       "marketStatus": "Market Not Tradable",
       "orderbookError": "Orderbook Fetch Failed",
       "orderbookEmpty": "Orderbook Empty",
+      "priceRange": "Price Range Mismatch",
       "unknown": "Unknown Reason"
-    }
+    },
+    "noData": "No filtered orders"
   },
   "copyTradingList": {
     "title": "Copy Trading Config Management",

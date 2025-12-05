@@ -22,7 +22,9 @@ data class TemplateCreateRequest(
     // 过滤条件
     val minOrderDepth: String? = null,  // 最小订单深度（USDC金额），NULL表示不启用
     val maxSpread: String? = null,  // 最大价差（绝对价格），NULL表示不启用
-    val minOrderbookDepth: String? = null  // 最小订单簿深度（USDC金额），NULL表示不启用
+    val minOrderbookDepth: String? = null,  // 最小订单簿深度（USDC金额），NULL表示不启用
+    val minPrice: String? = null,  // 最低价格（可选），NULL表示不限制最低价
+    val maxPrice: String? = null  // 最高价格（可选），NULL表示不限制最高价
 )
 
 /**
@@ -48,7 +50,9 @@ data class TemplateUpdateRequest(
     // 过滤条件
     val minOrderDepth: String? = null,  // 最小订单深度（USDC金额），NULL表示不启用
     val maxSpread: String? = null,  // 最大价差（绝对价格），NULL表示不启用
-    val minOrderbookDepth: String? = null  // 最小订单簿深度（USDC金额），NULL表示不启用
+    val minOrderbookDepth: String? = null,  // 最小订单簿深度（USDC金额），NULL表示不启用
+    val minPrice: String? = null,  // 最低价格（可选），NULL表示不限制最低价
+    val maxPrice: String? = null  // 最高价格（可选），NULL表示不限制最高价
 )
 
 /**
@@ -81,7 +85,9 @@ data class TemplateCopyRequest(
     // 过滤条件
     val minOrderDepth: String? = null,  // 最小订单深度（USDC金额），NULL表示不启用
     val maxSpread: String? = null,  // 最大价差（绝对价格），NULL表示不启用
-    val minOrderbookDepth: String? = null  // 最小订单簿深度（USDC金额），NULL表示不启用
+    val minOrderbookDepth: String? = null,  // 最小订单簿深度（USDC金额），NULL表示不启用
+    val minPrice: String? = null,  // 最低价格（可选），NULL表示不限制最低价
+    val maxPrice: String? = null  // 最高价格（可选），NULL表示不限制最高价
 )
 
 /**
@@ -115,6 +121,8 @@ data class TemplateDto(
     val minOrderDepth: String?,
     val maxSpread: String?,
     val minOrderbookDepth: String?,
+    val minPrice: String?,  // 最低价格（可选），NULL表示不限制最低价
+    val maxPrice: String?,  // 最高价格（可选），NULL表示不限制最高价
     val createdAt: Long,
     val updatedAt: Long
 )

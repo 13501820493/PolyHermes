@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { Card, Table, Button, Tag, Select, Space, message } from 'antd'
+import { Card, Table, Button, Tag, Select, Space, message, Divider, Spin } from 'antd'
 import { ArrowLeftOutlined } from '@ant-design/icons'
 import { useTranslation } from 'react-i18next'
 import { apiService } from '../services/api'
@@ -64,6 +64,7 @@ const FilteredOrdersList: React.FC = () => {
       'MARKET_STATUS': { color: 'blue', label: t('filteredOrdersList.filterTypes.marketStatus') || '市场状态不可交易' },
       'ORDERBOOK_ERROR': { color: 'default', label: t('filteredOrdersList.filterTypes.orderbookError') || '订单簿获取失败' },
       'ORDERBOOK_EMPTY': { color: 'default', label: t('filteredOrdersList.filterTypes.orderbookEmpty') || '订单簿为空' },
+      'PRICE_RANGE': { color: 'purple', label: t('filteredOrdersList.filterTypes.priceRange') || '价格区间不符' },
       'UNKNOWN': { color: 'default', label: t('filteredOrdersList.filterTypes.unknown') || '未知原因' }
     }
     const config = typeMap[type] || typeMap['UNKNOWN']
@@ -210,26 +211,186 @@ const FilteredOrdersList: React.FC = () => {
               <Option value="MARKET_STATUS">{t('filteredOrdersList.filterTypes.marketStatus') || '市场状态不可交易'}</Option>
               <Option value="ORDERBOOK_ERROR">{t('filteredOrdersList.filterTypes.orderbookError') || '订单簿获取失败'}</Option>
               <Option value="ORDERBOOK_EMPTY">{t('filteredOrdersList.filterTypes.orderbookEmpty') || '订单簿为空'}</Option>
+              <Option value="PRICE_RANGE">{t('filteredOrdersList.filterTypes.priceRange') || '价格区间不符'}</Option>
             </Select>
           </Space>
         </div>
         
-        <Table
-          columns={columns}
-          dataSource={filteredOrders}
-          rowKey="id"
-          loading={loading}
-          pagination={{
-            current: page,
-            pageSize: limit,
-            total: total,
-            showSizeChanger: false,
-            showTotal: (total) => t('common.total') + `: ${total}`,
-            onChange: (page) => setPage(page)
-          }}
-          scroll={{ x: isMobile ? 800 : 'auto' }}
-          size={isMobile ? 'small' : 'middle'}
-        />
+        {isMobile ? (
+          // 移动端卡片布局
+          <div>
+            {loading ? (
+              <div style={{ textAlign: 'center', padding: '40px' }}>
+                <Spin size="large" />
+              </div>
+            ) : filteredOrders.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
+                {t('filteredOrdersList.noData') || '暂无已过滤订单'}
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {filteredOrders.map((order) => {
+                  const date = new Date(order.createdAt)
+                  const formattedDate = date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })
+                  const marketLink = getMarketLink(order)
+                  const marketTitle = order.marketTitle || order.marketId.slice(0, 10) + '...'
+                  
+                  return (
+                    <Card
+                      key={order.id}
+                      style={{
+                        borderRadius: '12px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.08)',
+                        border: '1px solid #e8e8e8'
+                      }}
+                      bodyStyle={{ padding: '16px' }}
+                    >
+                      {/* 市场信息 */}
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ 
+                          fontSize: '16px', 
+                          fontWeight: 'bold', 
+                          marginBottom: '8px',
+                          color: '#1890ff'
+                        }}>
+                          {marketLink ? (
+                            <a href={marketLink} target="_blank" rel="noopener noreferrer" style={{ color: '#1890ff' }}>
+                              {marketTitle}
+                            </a>
+                          ) : (
+                            marketTitle
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', alignItems: 'center' }}>
+                          <Tag color={order.side === 'BUY' ? 'green' : 'red'}>
+                            {order.side === 'BUY' ? (t('order.buy') || '买入') : (t('order.sell') || '卖出')}
+                          </Tag>
+                          {getFilterTypeTag(order.filterType)}
+                        </div>
+                      </div>
+                      
+                      <Divider style={{ margin: '12px 0' }} />
+                      
+                      {/* 订单详情 */}
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
+                          {t('filteredOrdersList.outcome') || '市场方向'}
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: '500' }}>
+                          {order.outcome || (order.outcomeIndex !== undefined ? `Index ${order.outcomeIndex}` : '-')}
+                        </div>
+                      </div>
+                      
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
+                          {t('filteredOrdersList.price') || '价格'}
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: '500' }}>
+                          {order.price}
+                        </div>
+                      </div>
+                      
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
+                          {t('filteredOrdersList.size') || 'Leader数量'}
+                        </div>
+                        <div style={{ fontSize: '14px', fontWeight: '500' }}>
+                          {formatUSDC(order.size)}
+                        </div>
+                      </div>
+                      
+                      {order.calculatedQuantity && (
+                        <div style={{ marginBottom: '12px' }}>
+                          <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
+                            {t('filteredOrdersList.calculatedQuantity') || '计算数量'}
+                          </div>
+                          <div style={{ fontSize: '14px', fontWeight: '500' }}>
+                            {formatUSDC(order.calculatedQuantity)}
+                          </div>
+                        </div>
+                      )}
+                      
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>
+                          {t('filteredOrdersList.filterReason') || '过滤原因'}
+                        </div>
+                        <div style={{ fontSize: '13px', color: '#333', wordBreak: 'break-word' }}>
+                          {order.filterReason}
+                        </div>
+                      </div>
+                      
+                      {/* 时间 */}
+                      <div style={{ marginBottom: '12px' }}>
+                        <div style={{ fontSize: '12px', color: '#999' }}>
+                          {t('filteredOrdersList.createdAt') || '时间'}: {formattedDate}
+                        </div>
+                      </div>
+                    </Card>
+                  )
+                })}
+              </div>
+            )}
+            
+            {/* 移动端分页 */}
+            {filteredOrders.length > 0 && (
+              <div style={{ 
+                marginTop: '16px', 
+                display: 'flex', 
+                justifyContent: 'space-between', 
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '8px'
+              }}>
+                <div style={{ fontSize: '14px', color: '#666' }}>
+                  {t('common.total') || '共'} {total} {t('common.items') || '条'}
+                </div>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  <Button
+                    size="small"
+                    disabled={page === 1}
+                    onClick={() => setPage(page - 1)}
+                  >
+                    {t('common.prev') || '上一页'}
+                  </Button>
+                  <span style={{ lineHeight: '32px', fontSize: '14px' }}>
+                    {page} / {Math.ceil(total / limit)}
+                  </span>
+                  <Button
+                    size="small"
+                    disabled={page >= Math.ceil(total / limit)}
+                    onClick={() => setPage(page + 1)}
+                  >
+                    {t('common.next') || '下一页'}
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        ) : (
+          // 桌面端表格布局
+          <Table
+            columns={columns}
+            dataSource={filteredOrders}
+            rowKey="id"
+            loading={loading}
+            pagination={{
+              current: page,
+              pageSize: limit,
+              total: total,
+              showSizeChanger: false,
+              showTotal: (total) => t('common.total') + `: ${total}`,
+              onChange: (page) => setPage(page)
+            }}
+            scroll={{ x: 'auto' }}
+            size="middle"
+          />
+        )}
       </Card>
     </div>
   )
