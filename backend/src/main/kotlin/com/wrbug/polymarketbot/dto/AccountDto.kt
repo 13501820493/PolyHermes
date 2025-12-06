@@ -20,6 +20,24 @@ data class AccountUpdateRequest(
 )
 
 /**
+ * 系统配置更新请求
+ */
+data class SystemConfigUpdateRequest(
+    val builderApiKey: String? = null,  // Builder API Key（前端加密后传输）
+    val builderSecret: String? = null,  // Builder Secret（前端加密后传输）
+    val builderPassphrase: String? = null  // Builder Passphrase（前端加密后传输）
+)
+
+/**
+ * 系统配置响应
+ */
+data class SystemConfigDto(
+    val builderApiKeyConfigured: Boolean,  // Builder API Key 是否已配置
+    val builderSecretConfigured: Boolean,  // Builder Secret 是否已配置
+    val builderPassphraseConfigured: Boolean  // Builder Passphrase 是否已配置
+)
+
+/**
  * 账户删除请求
  */
 data class AccountDeleteRequest(

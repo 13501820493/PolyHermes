@@ -1,6 +1,7 @@
 import { useEffect, useState, useMemo } from 'react'
 import { Card, Table, Tag, message, Space, Input, Radio, Select, Button, Row, Col, Empty, Modal, Form, Descriptions } from 'antd'
 import { SearchOutlined, AppstoreOutlined, UnorderedListOutlined, UpOutlined, DownOutlined } from '@ant-design/icons'
+import { useNavigate } from 'react-router-dom'
 import { apiService } from '../services/api'
 import type { AccountPosition, Account, PositionPushMessage, PositionSellRequest, MarketPriceResponse, RedeemablePositionsSummary, PositionRedeemRequest } from '../types'
 import { getPositionKey } from '../types'
@@ -13,6 +14,7 @@ type PositionFilter = 'current' | 'historical'
 type ViewMode = 'card' | 'list'
 
 const PositionList: React.FC = () => {
+  const navigate = useNavigate()
   const isMobile = useMediaQuery({ maxWidth: 768 })
   const [currentPositions, setCurrentPositions] = useState<AccountPosition[]>([])
   const [historyPositions, setHistoryPositions] = useState<AccountPosition[]>([])
@@ -113,10 +115,34 @@ const PositionList: React.FC = () => {
         // 刷新可赎回统计
         await fetchRedeemableSummary()
       } else {
-        message.error(response.data.msg || '赎回失败')
+        // 检查是否是 Builder API Key 未配置的错误
+        if (response.data.code === 2014 || response.data.msg?.includes('Builder API Key 未配置')) {
+          message.error({
+            content: response.data.msg || 'Builder API Key 未配置',
+            duration: 5,
+          })
+          // 延迟跳转，让用户看到错误消息
+          setTimeout(() => {
+            navigate('/system-settings/builder-api-key')
+          }, 1500)
+        } else {
+          message.error(response.data.msg || '赎回失败')
+        }
       }
     } catch (error: any) {
-      message.error('赎回失败: ' + (error.message || '未知错误'))
+      // 检查是否是 Builder API Key 未配置的错误
+      if (error.response?.data?.code === 2014 || error.message?.includes('Builder API Key 未配置')) {
+        message.error({
+          content: error.response?.data?.msg || error.message || 'Builder API Key 未配置，请前往系统设置页面配置',
+          duration: 5,
+        })
+        // 延迟跳转，让用户看到错误消息
+        setTimeout(() => {
+          navigate('/system-settings/builder-api-key')
+        }, 1500)
+      } else {
+        message.error('赎回失败: ' + (error.message || '未知错误'))
+      }
     } finally {
       setRedeeming(false)
     }

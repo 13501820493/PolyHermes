@@ -27,7 +27,8 @@ class BlockchainService(
     private val dataApiBaseUrl: String,
     @Value("\${polygon.rpc.url:}")
     private val polygonRpcUrl: String,
-    private val retrofitFactory: RetrofitFactory
+    private val retrofitFactory: RetrofitFactory,
+    private val relayClientService: RelayClientService
 ) {
     
     private val logger = LoggerFactory.getLogger(BlockchainService::class.java)
@@ -406,12 +407,7 @@ class BlockchainService(
      * 赎回仓位
      * 通过代理钱包的 execTransaction 调用 ConditionalTokens 合约的 redeemPositions 函数
      * 
-     * 重要说明（基于实际链上交易分析）：
-     * - 仓位在 proxyAddress 上，需要通过代理钱包的 execTransaction 执行赎回
-     * - 交易流程：EOA → Proxy.execTransaction → ConditionalTokens.redeemPositions
-     * - execTransaction 是 Gnosis Safe 标准函数，需要构建 Safe 交易并签名
-     * 
-     * 参考交易: https://polygonscan.com/tx/0xb3b4cbab668c4c764aa2e7ff6f17f56f372921fc4852ef616ce65238d73eca4e
+     * 使用 RelayClientService 实现，完全参考 TypeScript 项目的实现方式
      * 
      * @param privateKey 私钥（原始钱包的私钥，用于签名交易）
      * @param proxyAddress 代理地址（Gnosis Safe 代理钱包地址）
@@ -426,14 +422,6 @@ class BlockchainService(
         indexSets: List<BigInteger>
     ): Result<String> {
         return try {
-            // 如果未配置 RPC URL，返回错误
-            if (polygonRpcUrl.isBlank()) {
-                logger.warn("未配置 Polygon RPC URL，无法赎回仓位")
-                return Result.failure(IllegalStateException("未配置 Polygon RPC URL，无法赎回仓位"))
-            }
-            
-            val rpcApi = polygonRpcApi ?: throw IllegalStateException("Polygon RPC URL 未配置")
-            
             // 验证参数
             if (indexSets.isEmpty()) {
                 return Result.failure(IllegalArgumentException("indexSets 不能为空"))
@@ -447,204 +435,9 @@ class BlockchainService(
                 return Result.failure(IllegalArgumentException("proxyAddress 格式错误，必须是有效的以太坊地址"))
             }
 
-            // 从私钥推导实际签名地址（交易真正的 from 地址）
-            val cleanPrivateKey = privateKey.removePrefix("0x")
-            val privateKeyBigInt = BigInteger(cleanPrivateKey, 16)
-            val credentials = org.web3j.crypto.Credentials.create(privateKeyBigInt.toString(16))
-            val fromAddress = credentials.address
-            
-            
-            // 1. 构建 ConditionalTokens.redeemPositions 的调用数据
-            val redeemFunctionSelector = EthereumUtils.getFunctionSelector("redeemPositions(address,bytes32,bytes32,uint256[])")
-            
-            // 编码 redeemPositions 参数
-            val encodedCollateral = EthereumUtils.encodeAddress(usdcContractAddress)
-            val encodedParentCollection = EthereumUtils.encodeBytes32(EMPTY_SET)  // parentCollectionId 通常为全0
-            val encodedConditionId = EthereumUtils.encodeBytes32(conditionId)
-            
-            // 编码数组：offset (32字节) + length (32字节) + 每个元素 (32字节)
-            val arrayOffset = BigInteger.valueOf(128)
-            val arrayLength = BigInteger.valueOf(indexSets.size.toLong())
-            val encodedArrayOffset = EthereumUtils.encodeUint256(arrayOffset)
-            val encodedArrayLength = EthereumUtils.encodeUint256(arrayLength)
-            val encodedArrayElements = indexSets.joinToString("") { EthereumUtils.encodeUint256(it) }
-            
-            // ConditionalTokens.redeemPositions 的调用数据
-            val redeemCallData = redeemFunctionSelector + 
-                encodedCollateral + 
-                encodedParentCollection + 
-                encodedConditionId + 
-                encodedArrayOffset + 
-                encodedArrayLength + 
-                encodedArrayElements
-            
-            // 2. 构建 Proxy.execTransaction 的调用数据
-            // 函数签名: execTransaction(address to,uint256 value,bytes data,uint8 operation,uint256 safeTxGas,uint256 baseGas,uint256 gasPrice,address gasToken,address refundReceiver,bytes signatures)
-            // 根据实际交易分析，参数如下：
-            // - to: ConditionalTokens 合约地址
-            // - value: 0
-            // - data: redeemPositions 的调用数据
-            // - operation: 0 (CALL)
-            // - safeTxGas: 0 (使用所有可用 gas)
-            // - baseGas: 0
-            // - gasPrice: 0 (使用当前 gas price)
-            // - gasToken: 0x0000...0000 (使用原生代币)
-            // - refundReceiver: 0x0000...0000
-            // - signatures: EIP-712 签名的 Safe 交易
-            
-            // 获取 Proxy 的 nonce（用于构建 Safe 交易哈希）
-            val proxyNonceResult = getProxyNonce(proxyAddress)
-            val proxyNonce = proxyNonceResult.getOrElse {
-                logger.warn("获取 Proxy nonce 失败，使用 0: ${it.message}")
-                BigInteger.ZERO
-            }
-            
-            // 构建 Safe 交易哈希（用于 EIP-712 签名）
-            // 使用 Gnosis Safe 的 EIP-712 签名标准
-            val safeTxGas = BigInteger.ZERO
-            val baseGas = BigInteger.ZERO
-            val safeGasPrice = BigInteger.ZERO // 使用不同的变量名避免冲突
-            val gasToken = "0x0000000000000000000000000000000000000000"
-            val refundReceiver = "0x0000000000000000000000000000000000000000"
-            
-            // 1. 编码 Safe 域分隔符
-            val safeDomainSeparator = com.wrbug.polymarketbot.util.Eip712Encoder.encodeSafeDomain(
-                verifyingContract = proxyAddress
-            )
-            
-            // 2. 编码 SafeTx 消息哈希
-            val safeTxHash = com.wrbug.polymarketbot.util.Eip712Encoder.encodeSafeTx(
-                to = conditionalTokensAddress,
-                value = BigInteger.ZERO,
-                data = redeemCallData,
-                operation = 0, // CALL
-                safeTxGas = safeTxGas,
-                baseGas = baseGas,
-                gasPrice = safeGasPrice,
-                gasToken = gasToken,
-                refundReceiver = refundReceiver,
-                nonce = proxyNonce
-            )
-            
-            // 3. 计算完整的结构化数据哈希
-            val safeTxStructuredHash = com.wrbug.polymarketbot.util.Eip712Encoder.hashStructuredData(
-                domainSeparator = safeDomainSeparator,
-                messageHash = safeTxHash
-            )
-            
-            // 4. 使用私钥签名 Safe 交易
-            val ecKeyPair = org.web3j.crypto.ECKeyPair.create(privateKeyBigInt)
-            val safeSignature = org.web3j.crypto.Sign.signMessage(safeTxStructuredHash, ecKeyPair, false)
-            
-            // 5. 编码签名数据（Gnosis Safe 签名格式：r + s + v，每个 32 字节，共 96 字节）
-            // Safe 签名格式：r (32 bytes) + s (32 bytes) + v (1 byte，但需要编码为 32 字节)
-            val vBytes = safeSignature.v as ByteArray
-            val vInt = if (vBytes.isNotEmpty()) {
-                vBytes[0].toInt() and 0xff
-            } else {
-                0
-            }
-            
-            // 编码为十六进制字符串（每个字段 32 字节 = 64 个十六进制字符）
-            val rHex = org.web3j.utils.Numeric.toHexString(safeSignature.r).removePrefix("0x").padStart(64, '0')
-            val sHex = org.web3j.utils.Numeric.toHexString(safeSignature.s).removePrefix("0x").padStart(64, '0')
-            val vHex = String.format("%064x", vInt)
-            
-            // Safe 签名格式：r + s + v（每个 32 字节，共 96 字节 = 192 个十六进制字符）
-            val safeSignatureHex = rHex + sHex + vHex
-            
-            // 3. 构建 execTransaction 的调用数据
-            // 函数签名: execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)
-            val execFunctionSelector = EthereumUtils.getFunctionSelector("execTransaction(address,uint256,bytes,uint8,uint256,uint256,uint256,address,address,bytes)")
-            
-            // 编码 execTransaction 参数
-            val encodedTo = EthereumUtils.encodeAddress(conditionalTokensAddress)
-            val encodedValue = EthereumUtils.encodeUint256(BigInteger.ZERO)
-            
-            // data 参数（bytes 类型）：offset (32字节) + length (32字节) + data (按长度，不足32字节的倍数需要padding)
-            // 固定参数部分：to(32) + value(32) + data_offset(32) + operation(32) + safeTxGas(32) + baseGas(32) + gasPrice(32) + gasToken(32) + refundReceiver(32) + signatures_offset(32) = 320字节
-            val dataOffset = BigInteger.valueOf(320L)
-            val redeemCallDataHex = redeemCallData.removePrefix("0x")
-            val dataLengthBytes = BigInteger.valueOf((redeemCallDataHex.length / 2).toLong()) // 字节数
-            val encodedDataOffset = EthereumUtils.encodeUint256(dataOffset)
-            val encodedDataLength = EthereumUtils.encodeUint256(dataLengthBytes)
-            // data 需要按 32 字节对齐（不足的补0）
-            val dataPaddedLength = ((dataLengthBytes.toInt() + 31) / 32) * 32 * 2 // 十六进制字符数
-            val encodedData = redeemCallDataHex.padEnd(dataPaddedLength, '0')
-            
-            val encodedOperation = EthereumUtils.encodeUint256(BigInteger.ZERO) // 0 = CALL
-            val encodedSafeTxGas = EthereumUtils.encodeUint256(BigInteger.ZERO)
-            val encodedBaseGas = EthereumUtils.encodeUint256(BigInteger.ZERO)
-            val encodedGasPrice = EthereumUtils.encodeUint256(BigInteger.ZERO)
-            val encodedGasToken = EthereumUtils.encodeAddress("0x0000000000000000000000000000000000000000")
-            val encodedRefundReceiver = EthereumUtils.encodeAddress("0x0000000000000000000000000000000000000000")
-            
-            // signatures 参数（bytes 类型）：offset + length + signatures
-            // signatures 的 offset = dataOffset + dataLength 的 32字节对齐后的位置
-            val dataPaddedBytes = dataPaddedLength / 2
-            val signaturesOffset = BigInteger.valueOf((320 + dataPaddedBytes).toLong())
-            // Safe 签名长度：r (32) + s (32) + v (32) = 96 字节
-            val signaturesLength = BigInteger.valueOf(96L)
-            val encodedSignaturesOffset = EthereumUtils.encodeUint256(signaturesOffset)
-            val encodedSignaturesLength = EthereumUtils.encodeUint256(signaturesLength)
-            // signatures 需要按 32 字节对齐（96 字节已经是 32 的倍数，不需要 padding）
-            val encodedSignatures = safeSignatureHex
-            
-            // 组合 execTransaction 调用数据
-            val execCallData = "0x" + execFunctionSelector.removePrefix("0x") +
-                encodedTo +
-                encodedValue +
-                encodedDataOffset +
-                encodedDataLength +
-                encodedData +
-                encodedOperation +
-                encodedSafeTxGas +
-                encodedBaseGas +
-                encodedGasPrice +
-                encodedGasToken +
-                encodedRefundReceiver +
-                encodedSignaturesOffset +
-                encodedSignaturesLength +
-                encodedSignatures
-            
-            // 4. 获取 EOA 的 nonce（用于发送交易）
-            val nonceResult = getTransactionCount(fromAddress)
-            val nonce = nonceResult.getOrElse {
-                return Result.failure(Exception("获取 nonce 失败: ${it.message}"))
-            }
-            
-            // 5. 获取 gas price
-            val gasPriceResult = getGasPrice()
-            val gasPrice = gasPriceResult.getOrElse {
-                return Result.failure(Exception("获取 gas price 失败: ${it.message}"))
-            }
-            
-            // 6. Gas limit（通过 Proxy 执行需要更多 gas，给 240 万，参考实际交易）
-            val gasLimit = BigInteger.valueOf(2400000)
-            
-            // 7. 构建并签名交易
-            // 调用 Proxy 的 execTransaction
-            val transaction = buildTransaction(
-                privateKey = privateKey,
-                from = fromAddress,
-                to = proxyAddress,  // 调用代理钱包
-                data = execCallData,
-                nonce = nonce,
-                gasLimit = gasLimit,
-                gasPrice = gasPrice
-            )
-            
-            // 8. 发送交易
-            val txHashResult = sendTransaction(rpcApi, transaction)
-            txHashResult.fold(
-                onSuccess = { txHash ->
-                    Result.success(txHash)
-                },
-                onFailure = { e ->
-                    logger.error("发送赎回交易失败: ${e.message}", e)
-                    Result.failure(e)
-                }
-            )
+            // 使用 RelayClientService 创建赎回交易并执行
+            val redeemTx = relayClientService.createRedeemTx(conditionId, indexSets)
+            relayClientService.execute(privateKey, proxyAddress, redeemTx)
         } catch (e: Exception) {
             logger.error("赎回仓位失败: ${e.message}", e)
             Result.failure(e)

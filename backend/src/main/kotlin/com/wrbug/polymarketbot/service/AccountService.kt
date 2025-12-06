@@ -28,7 +28,8 @@ class AccountService(
     private val orderPushService: OrderPushService,
     private val orderSigningService: OrderSigningService,
     private val cryptoUtils: com.wrbug.polymarketbot.util.CryptoUtils,
-    private val telegramNotificationService: TelegramNotificationService? = null  // 可选，避免循环依赖
+    private val telegramNotificationService: TelegramNotificationService? = null,  // 可选，避免循环依赖
+    private val relayClientService: RelayClientService
 ) {
 
     private val logger = LoggerFactory.getLogger(AccountService::class.java)
@@ -1224,6 +1225,13 @@ class AccountService(
      */
     suspend fun redeemPositions(request: com.wrbug.polymarketbot.dto.PositionRedeemRequest): Result<com.wrbug.polymarketbot.dto.PositionRedeemResponse> {
         return try {
+            // 检查 Builder API Key 是否已配置
+            if (!relayClientService.isBuilderApiKeyConfigured()) {
+                return Result.failure(
+                    IllegalStateException("Builder API Key 未配置，无法执行 Gasless 交易。请前往系统设置页面配置 Builder API Key。")
+                )
+            }
+            
             if (request.positions.isEmpty()) {
                 return Result.failure(IllegalArgumentException("赎回仓位列表不能为空"))
             }

@@ -281,24 +281,29 @@ object Eip712Encoder {
     
     /**
      * 编码 Gnosis Safe 域分隔符
-     * Domain: { verifyingContract: address }
-     * 参考: Gnosis Safe 合约的 EIP-712 域定义
+     * Domain: { chainId: uint256, verifyingContract: address }
+     * 参考: builder-relayer-client/src/builder/safe.ts 的 createStructHash
+     * 注意：TypeScript 的 domain 包含 chainId 和 verifyingContract
      */
     fun encodeSafeDomain(
+        chainId: Long,
         verifyingContract: String
     ): ByteArray {
         val domainTypeHash = encodeType(
             "EIP712Domain",
             listOf(
+                "chainId" to "uint256",
                 "verifyingContract" to "address"
             )
         )
         
+        val chainIdBytes = encodeUint256(BigInteger.valueOf(chainId))
         val contractBytes = encodeAddress(verifyingContract)
         
-        val encoded = ByteArray(32 + 32)
+        val encoded = ByteArray(32 + 32 + 32)
         System.arraycopy(domainTypeHash, 0, encoded, 0, 32)
-        System.arraycopy(contractBytes, 0, encoded, 32, 32)
+        System.arraycopy(chainIdBytes, 0, encoded, 32, 32)
+        System.arraycopy(contractBytes, 0, encoded, 64, 32)
         
         return keccak256(encoded)
     }

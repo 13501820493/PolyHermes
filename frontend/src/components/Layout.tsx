@@ -19,7 +19,8 @@ import {
   TwitterOutlined,
   GlobalOutlined,
   CheckCircleOutlined,
-  NotificationOutlined
+  NotificationOutlined,
+  KeyOutlined
 } from '@ant-design/icons'
 import type { MenuProps } from 'antd'
 import type { ReactNode } from 'react'
@@ -122,6 +123,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       label: t('menu.systemSettings'),
       children: [
         {
+          key: '/system-settings',
+          icon: <SettingOutlined />,
+          label: t('menu.systemOverview') || '概览'
+        },
+        {
           key: '/system-settings/language',
           icon: <GlobalOutlined />,
           label: t('menu.language')
@@ -135,6 +141,11 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
           key: '/system-settings/proxy',
           icon: <LinkOutlined />,
           label: t('menu.proxy')
+        },
+        {
+          key: '/system-settings/builder-api-key',
+          icon: <KeyOutlined />,
+          label: t('menu.builderApiKey') || 'Builder API Key'
         },
         {
           key: '/system-settings/notifications',
@@ -173,8 +184,8 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
   }
   
   const handleMenuClick = ({ key }: { key: string }) => {
-    // 如果是父菜单，不导航
-    if (key === '/copy-trading-management' || key === '/system-settings') {
+    // 如果是父菜单，不导航（但 /system-settings 作为子菜单项时可以导航）
+    if (key === '/copy-trading-management') {
       return
     }
     

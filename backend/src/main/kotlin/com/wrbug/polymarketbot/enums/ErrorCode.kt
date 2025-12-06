@@ -81,6 +81,7 @@ enum class ErrorCode(
     AUTH_RESET_PASSWORD_RATE_LIMIT(2011, "频率限制：1分钟内最多尝试3次，请稍后再试", "error.auth.reset_password_rate_limit"),
     AUTH_USER_NOT_FOUND(2012, "用户不存在", "error.auth.user_not_found"),
     AUTH_PASSWORD_WEAK(2013, "密码长度不符合要求，至少6位", "error.auth.password_weak"),
+    BUILDER_API_KEY_NOT_CONFIGURED(2014, "Builder API Key 未配置", "error.builder_api_key_not_configured"),
     
     // ==================== 资源不存在 (3001-3999) ====================
     NOT_FOUND(3001, "资源不存在", "error.not_found"),

@@ -753,6 +753,24 @@ export interface NotificationConfigRequest {
 /**
  * 通知配置更新请求
  */
+/**
+ * 系统配置响应
+ */
+export interface SystemConfig {
+  builderApiKeyConfigured: boolean
+  builderSecretConfigured: boolean
+  builderPassphraseConfigured: boolean
+}
+
+/**
+ * Builder API Key 更新请求
+ */
+export interface BuilderApiKeyUpdateRequest {
+  builderApiKey?: string
+  builderSecret?: string
+  builderPassphrase?: string
+}
+
 export interface NotificationConfigUpdateRequest {
   id: number
   type: string

@@ -578,6 +578,23 @@ export const apiService = {
      */
     getTelegramChatIds: (data: { botToken: string }) =>
       apiClient.post<ApiResponse<string[]>>('/notifications/telegram/get-chat-ids', data)
+  },
+  
+  /**
+   * 系统配置 API
+   */
+  systemConfig: {
+    /**
+     * 获取系统配置
+     */
+    get: () =>
+      apiClient.post<ApiResponse<import('../types').SystemConfig>>('/system/config/get', {}),
+    
+    /**
+     * 更新 Builder API Key 配置
+     */
+    updateBuilderApiKey: (data: import('../types').BuilderApiKeyUpdateRequest) =>
+      apiClient.post<ApiResponse<import('../types').SystemConfig>>('/system/config/builder-api-key/update', data)
   }
 }
 

@@ -412,13 +412,26 @@ class AccountController(
                             )
                         )
 
-                        is IllegalStateException -> ResponseEntity.ok(
-                            ApiResponse.error(
-                                ErrorCode.BUSINESS_ERROR,
-                                e.message,
-                                messageSource
-                            )
-                        )
+                        is IllegalStateException -> {
+                            // 检查是否是 Builder API Key 未配置的错误
+                            if (e.message?.contains("Builder API Key 未配置") == true) {
+                                ResponseEntity.ok(
+                                    ApiResponse.error(
+                                        ErrorCode.BUILDER_API_KEY_NOT_CONFIGURED,
+                                        "${e.message} 请前往系统设置页面配置：/system-settings",
+                                        messageSource
+                                    )
+                                )
+                            } else {
+                                ResponseEntity.ok(
+                                    ApiResponse.error(
+                                        ErrorCode.BUSINESS_ERROR,
+                                        e.message,
+                                        messageSource
+                                    )
+                                )
+                            }
+                        }
 
                         else -> ResponseEntity.ok(
                             ApiResponse.error(

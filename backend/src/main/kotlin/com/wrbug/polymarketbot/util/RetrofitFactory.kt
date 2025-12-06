@@ -2,6 +2,7 @@ package com.wrbug.polymarketbot.util
 
 import com.google.gson.Gson
 import com.google.gson.GsonBuilder
+import com.wrbug.polymarketbot.api.BuilderRelayerApi
 import com.wrbug.polymarketbot.api.EthereumRpcApi
 import com.wrbug.polymarketbot.api.PolymarketClobApi
 import com.wrbug.polymarketbot.api.PolymarketDataApi
@@ -161,6 +162,44 @@ class RetrofitFactory(
             .addConverterFactory(GsonConverterFactory.create(gson))
             .build()
             .create(PolymarketDataApi::class.java)
+    }
+    
+    /**
+     * 创建 Builder Relayer API 客户端
+     * @param relayerUrl Builder Relayer URL
+     * @param apiKey Builder API Key
+     * @param secret Builder Secret
+     * @param passphrase Builder Passphrase
+     * @return BuilderRelayerApi 客户端
+     */
+    fun createBuilderRelayerApi(
+        relayerUrl: String,
+        apiKey: String,
+        secret: String,
+        passphrase: String
+    ): BuilderRelayerApi {
+        val baseUrl = if (relayerUrl.endsWith("/")) {
+            relayerUrl.dropLast(1)
+        } else {
+            relayerUrl
+        }
+        
+        // 添加 Builder 认证拦截器
+        val builderAuthInterceptor = BuilderAuthInterceptor(apiKey, secret, passphrase)
+        val okHttpClient = createClient()
+            .addInterceptor(builderAuthInterceptor)
+            .build()
+        
+        val gson = GsonBuilder()
+            .setLenient()
+            .create()
+        
+        return Retrofit.Builder()
+            .baseUrl("$baseUrl/")
+            .client(okHttpClient)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .build()
+            .create(BuilderRelayerApi::class.java)
     }
 }
 

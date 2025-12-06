@@ -29,7 +29,9 @@ class ApiHealthCheckService(
     @Value("\${polygon.rpc.url:}")
     private val polygonRpcUrl: String,
     @Value("\${polymarket.rtds.ws-url}")
-    private val polymarketWsUrl: String
+    private val polymarketWsUrl: String,
+    @Value("\${polymarket.builder.relayer-url:}")
+    private val builderRelayerUrl: String
 ) : ApplicationContextAware {
 
     private var applicationContext: ApplicationContext? = null
@@ -59,6 +61,17 @@ class ApiHealthCheckService(
             null
         }
     }
+    
+    /**
+     * 获取 RelayClientService（通过 ApplicationContext 避免循环依赖）
+     */
+    private fun getRelayClientService(): RelayClientService? {
+        return try {
+            applicationContext?.getBean(RelayClientService::class.java)
+        } catch (e: BeansException) {
+            null
+        }
+    }
 
     private val logger = LoggerFactory.getLogger(ApiHealthCheckService::class.java)
 
@@ -70,12 +83,13 @@ class ApiHealthCheckService(
 
         // 并行检查所有 API
         coroutineScope {
-            val jobs = listOf(
+            val jobs = mutableListOf<Deferred<ApiHealthCheckDto>>(
                 async { checkClobApi() },
                 async { checkDataApi() },
                 async { checkGammaApi() },
                 async { checkPolygonRpc() },
-                async { checkPolymarketWebSocket() }
+                async { checkPolymarketWebSocket() },
+                async { checkBuilderRelayerApi() }
             )
 
             jobs.awaitAll().forEach { result ->
@@ -369,6 +383,71 @@ class ApiHealthCheckService(
             ApiHealthCheckDto(
                 name = name,
                 url = url,
+                status = "error",
+                message = e.message ?: "连接失败"
+            )
+        }
+    }
+    
+    /**
+     * 检查 Builder Relayer API
+     */
+    private suspend fun checkBuilderRelayerApi(): ApiHealthCheckDto = withContext(Dispatchers.IO) {
+        val relayClientService = getRelayClientService()
+        
+        if (builderRelayerUrl.isBlank()) {
+            return@withContext ApiHealthCheckDto(
+                name = "Builder Relayer API",
+                url = "未配置",
+                status = "skipped",
+                message = "未配置 Builder Relayer URL"
+            )
+        }
+        
+        if (relayClientService == null) {
+            return@withContext ApiHealthCheckDto(
+                name = "Builder Relayer API",
+                url = builderRelayerUrl,
+                status = "error",
+                message = "服务未初始化"
+            )
+        }
+        
+        if (!relayClientService.isBuilderApiKeyConfigured()) {
+            return@withContext ApiHealthCheckDto(
+                name = "Builder Relayer API",
+                url = builderRelayerUrl,
+                status = "skipped",
+                message = "Builder API Key 未配置"
+            )
+        }
+        
+        return@withContext try {
+            val result = relayClientService.checkBuilderRelayerApiHealth()
+            result.fold(
+                onSuccess = { responseTime ->
+                    ApiHealthCheckDto(
+                        name = "Builder Relayer API",
+                        url = builderRelayerUrl,
+                        status = "success",
+                        message = "连接成功",
+                        responseTime = responseTime
+                    )
+                },
+                onFailure = { e ->
+                    ApiHealthCheckDto(
+                        name = "Builder Relayer API",
+                        url = builderRelayerUrl,
+                        status = "error",
+                        message = e.message ?: "连接失败"
+                    )
+                }
+            )
+        } catch (e: Exception) {
+            logger.warn("检查 Builder Relayer API 失败", e)
+            ApiHealthCheckDto(
+                name = "Builder Relayer API",
+                url = builderRelayerUrl,
                 status = "error",
                 message = e.message ?: "连接失败"
             )
