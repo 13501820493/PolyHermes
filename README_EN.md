@@ -276,7 +276,7 @@ docker-compose down
 
 In production environments, it is recommended to deploy Nginx as a reverse proxy outside the Docker container for SSL/TLS termination, domain binding, etc.
 
-For detailed configuration, please refer to: [Deployment Documentation - Nginx Reverse Proxy](docs/DEPLOYMENT.md#使用外部-nginx-反向代理生产环境推荐)
+For detailed configuration, please refer to: [Deployment Documentation - Nginx Reverse Proxy](docs/en/DEPLOYMENT.md#using-external-nginx-reverse-proxy-recommended-for-production)
 
 ### 📦 Separate Deployment
 
@@ -357,7 +357,7 @@ For detailed instructions, please refer to: [Version Management Documentation](d
 
 For detailed development guides, API documentation, code standards, etc., please refer to:
 
-### 📖 [Development Documentation](docs/DEVELOPMENT.md)
+### 📖 [Development Documentation](docs/en/DEVELOPMENT.md) / [中文](docs/zh/DEVELOPMENT.md)
 
 The development documentation includes:
 
@@ -372,11 +372,11 @@ The development documentation includes:
 
 ### 📚 Other Documentation
 
-- [Deployment Documentation](docs/DEPLOYMENT.md) / [English](docs/DEPLOYMENT_EN.md) - Detailed deployment guide (Java/Docker)
-- [Version Management Documentation](docs/VERSION_MANAGEMENT.md) / [English](docs/VERSION_MANAGEMENT_EN.md) - Version number management and auto-build
-- [Development Documentation](docs/DEVELOPMENT.md) / [English](docs/DEVELOPMENT_EN.md) - Development guide
-- [Copy Trading System Requirements](docs/copy-trading-requirements.md) - Backend API documentation
-- [Frontend Requirements](docs/copy-trading-frontend-requirements.md) - Frontend feature documentation
+- [Deployment Documentation (English)](docs/en/DEPLOYMENT.md) / [中文](docs/zh/DEPLOYMENT.md) - Detailed deployment guide (Java/Docker)
+- [Version Management Documentation (English)](docs/en/VERSION_MANAGEMENT.md) / [中文](docs/zh/VERSION_MANAGEMENT.md) - Version number management and auto-build
+- [Development Documentation (English)](docs/en/DEVELOPMENT.md) / [中文](docs/zh/DEVELOPMENT.md) - Development guide
+- [Copy Trading System Requirements](docs/zh/copy-trading-requirements.md) - Backend API documentation
+- [Frontend Requirements](docs/zh/copy-trading-frontend-requirements.md) - Frontend feature documentation
 
 ### 🤝 Contributing
 

@@ -276,7 +276,7 @@ docker-compose down
 
 在生产环境中，建议在 Docker 容器外部部署 Nginx 作为反向代理，用于 SSL/TLS 终止、域名绑定等。
 
-详细配置请参考：[部署文档 - Nginx 反向代理](docs/DEPLOYMENT.md#使用外部-nginx-反向代理生产环境推荐)
+详细配置请参考：[部署文档 - Nginx 反向代理](docs/zh/DEPLOYMENT.md#使用外部-nginx-反向代理生产环境推荐)
 
 ### 📦 分别部署
 
@@ -332,7 +332,8 @@ cd frontend
 
 ### 📚 详细部署文档
 
-更多部署选项和详细说明，请参考：[部署文档](docs/DEPLOYMENT.md)
+更多部署选项和详细说明，请参考：
+- [部署文档（中文）](docs/zh/DEPLOYMENT.md) / [English](docs/en/DEPLOYMENT.md)
 
 包括：
 - 一体化部署详细步骤
@@ -349,7 +350,8 @@ cd frontend
 - **自动删除**：删除 release 时自动删除对应的 Docker 镜像标签
 - **版本号显示**：前端自动显示当前版本号
 
-详细说明请参考：[版本号管理文档](docs/VERSION_MANAGEMENT.md)
+详细说明请参考：
+- [版本号管理文档（中文）](docs/zh/VERSION_MANAGEMENT.md) / [English](docs/en/VERSION_MANAGEMENT.md)
 
 ---
 
@@ -357,7 +359,7 @@ cd frontend
 
 详细的开发指南、API 接口文档、代码规范等，请参考：
 
-### 📖 [开发文档](docs/DEVELOPMENT.md)
+### 📖 [开发文档](docs/zh/DEVELOPMENT.md) / [English](docs/en/DEVELOPMENT.md)
 
 开发文档包含以下内容：
 
@@ -372,11 +374,11 @@ cd frontend
 
 ### 📚 其他文档
 
-- [部署文档](docs/DEPLOYMENT.md) / [English](docs/DEPLOYMENT_EN.md) - 详细的部署指南（Java/Docker）
-- [版本号管理文档](docs/VERSION_MANAGEMENT.md) / [English](docs/VERSION_MANAGEMENT_EN.md) - 版本号管理和自动构建
-- [开发文档](docs/DEVELOPMENT.md) / [English](docs/DEVELOPMENT_EN.md) - 开发指南
-- [跟单系统需求文档](docs/copy-trading-requirements.md) - 后端 API 接口文档
-- [前端需求文档](docs/copy-trading-frontend-requirements.md) - 前端功能文档
+- [部署文档（中文）](docs/zh/DEPLOYMENT.md) / [English](docs/en/DEPLOYMENT.md) - 详细的部署指南（Java/Docker）
+- [版本号管理文档（中文）](docs/zh/VERSION_MANAGEMENT.md) / [English](docs/en/VERSION_MANAGEMENT.md) - 版本号管理和自动构建
+- [开发文档（中文）](docs/zh/DEVELOPMENT.md) / [English](docs/en/DEVELOPMENT.md) - 开发指南
+- [跟单系统需求文档](docs/zh/copy-trading-requirements.md) - 后端 API 接口文档
+- [前端需求文档](docs/zh/copy-trading-frontend-requirements.md) - 前端功能文档
 
 ### 🤝 贡献指南
 

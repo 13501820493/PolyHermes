@@ -1,5 +1,7 @@
 # Version Management Guide
 
+> 📖 **中文版本**: [版本号管理说明（中文）](../zh/VERSION_MANAGEMENT.md)
+
 ## Overview
 
 This project supports automatic version number management and display. When creating a release tag on GitHub, it automatically triggers GitHub Actions to build Docker images and push them to Docker Hub, while displaying the version number after the frontend title.

@@ -1,5 +1,7 @@
 # 版本号管理说明
 
+> 📖 **English Version**: [Version Management Guide (English)](../en/VERSION_MANAGEMENT.md)
+
 ## 概述
 
 本项目支持自动版本号管理和显示。当在 GitHub 创建 release tag 时，会自动触发 GitHub Actions 构建 Docker 镜像并推送到 Docker Hub，同时在前端标题后显示版本号。

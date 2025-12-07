@@ -206,7 +206,7 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ```bash
 # 1. 下载 Nginx 配置示例
-curl -O https://raw.githubusercontent.com/WrBug/PolyHermes/main/docs/nginx-reverse-proxy.conf
+curl -O https://raw.githubusercontent.com/WrBug/PolyHermes/main/docs/zh/nginx-reverse-proxy.conf
 
 # 2. 复制到 Nginx 配置目录
 sudo cp nginx-reverse-proxy.conf /etc/nginx/sites-available/polyhermes
@@ -254,13 +254,15 @@ ports:
 
 **Nginx 配置说明**：
 
-- 配置文件位置：`docs/nginx-reverse-proxy.conf`
+- 配置文件位置：`docs/zh/nginx-reverse-proxy.conf`
 - 支持 HTTPS（SSL/TLS）
 - 支持 WebSocket 代理
 - 包含安全头设置
 - 支持负载均衡（可配置多个后端）
 
 详细配置示例请参考：[Nginx 反向代理配置](nginx-reverse-proxy.conf)
+
+> 📖 **English Version**: [Deployment Guide (English)](../en/DEPLOYMENT.md)
 
 ## 后端部署
 
