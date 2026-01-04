@@ -715,7 +715,7 @@ class BlockchainService(
     
     /**
      * 从链上查询市场条件（Condition）的结算结果
-     * 通过调用 ConditionalTokens 合约的 getCondition 函数获取 payouts
+     * 通过调用 ConditionalTokens 合约的 conditions mapping 和 payoutNumerators mapping
      * 
      * @param conditionId 市场条件ID（bytes32，必须是 0x 开头的 66 位十六进制字符串）
      * @return Result<Pair<payoutDenominator, payouts>>
@@ -734,44 +734,101 @@ class BlockchainService(
             
             val rpcApi = polygonRpcApi
             
-            // 构建 getCondition(bytes32) 函数调用
-            // 函数签名: getCondition(bytes32)
-            val functionSelector = EthereumUtils.getFunctionSelector("getCondition(bytes32)")
+            // 1. 调用 conditions(bytes32) 获取 outcomeSlotCount 和 payoutDenominator
+            // 注意：这是一个公开的 mapping，Solidity 自动生成的 getter
+            // 函数签名: conditions(bytes32) returns (uint outcomeSlotCount, uint payoutDenominator)
+            val conditionsFunctionSelector = EthereumUtils.getFunctionSelector("conditions(bytes32)")
             val encodedConditionId = EthereumUtils.encodeBytes32(conditionId)
-            val data = functionSelector + encodedConditionId
+            val conditionsData = conditionsFunctionSelector + encodedConditionId
             
             // 构建 JSON-RPC 请求
-            val rpcRequest = JsonRpcRequest(
+            val conditionsRequest = JsonRpcRequest(
                 method = "eth_call",
                 params = listOf(
                     mapOf(
                         "to" to conditionalTokensAddress,
-                        "data" to data
+                        "data" to conditionsData
                     ),
                     "latest"
                 )
             )
             
             // 发送 RPC 请求
-            val response = rpcApi.call(rpcRequest)
+            val conditionsResponse = rpcApi.call(conditionsRequest)
             
-            if (!response.isSuccessful || response.body() == null) {
-                return Result.failure(Exception("RPC 请求失败: ${response.code()} ${response.message()}"))
+            if (!conditionsResponse.isSuccessful || conditionsResponse.body() == null) {
+                return Result.failure(Exception("RPC 请求失败 (conditions): ${conditionsResponse.code()} ${conditionsResponse.message()}"))
             }
             
-            val rpcResponse = response.body()!!
+            val conditionsRpcResponse = conditionsResponse.body()!!
             
             // 检查错误
-            if (rpcResponse.error != null) {
-                return Result.failure(Exception("RPC 错误: ${rpcResponse.error.message}"))
+            if (conditionsRpcResponse.error != null) {
+                // 记录完整的错误信息，包括 code 和 data
+                val errorMsg = "RPC 错误 (code=${conditionsRpcResponse.error.code}): ${conditionsRpcResponse.error.message}, data=${conditionsRpcResponse.error.data}"
+                logger.error("查询市场条件(conditions)出现RPC错误: conditionId=$conditionId, $errorMsg")
+                logger.debug("RPC 请求详情: to=$conditionalTokensAddress, data=$conditionsData")
+                return Result.failure(Exception(errorMsg))
             }
             
             // 使用 Gson 解析 result（JsonElement）
-            val hexResult = rpcResponse.result?.asString 
+            val hexResult = conditionsRpcResponse.result?.asString 
                 ?: return Result.failure(Exception("RPC 响应格式错误: result 为空"))
             
-            // 解析 ABI 编码的返回结果
-            val (payoutDenominator, payouts) = EthereumUtils.decodeConditionResult(hexResult)
+            // 解析返回的 (outcomeSlotCount, payoutDenominator)
+            val cleanHex = hexResult.removePrefix("0x")
+            val outcomeSlotCountHex = cleanHex.substring(0, 64)
+            val payoutDenominatorHex = cleanHex.substring(64, 128)
+            
+            val outcomeSlotCount = BigInteger(outcomeSlotCountHex, 16).toInt()
+            val payoutDenominator = BigInteger(payoutDenominatorHex, 16)
+            
+            // 如果 outcomeSlotCount 为 0，说明市场尚未创建或不存在
+            if (outcomeSlotCount <= 0) {
+                logger.debug("市场尚未创建或不存在: conditionId=$conditionId, outcomeSlotCount=$outcomeSlotCount")
+                return Result.success(Pair(BigInteger.ZERO, emptyList()))
+            }
+            
+            // 如果 payoutDenominator 为 0，说明市场尚未结算
+            if (payoutDenominator == BigInteger.ZERO) {
+                logger.debug("市场尚未结算: conditionId=$conditionId, payoutDenominator=$payoutDenominator")
+                return Result.success(Pair(BigInteger.ZERO, emptyList()))
+            }
+            
+            // 2. 查询每个 outcome 的 payoutNumerators
+            val payouts = mutableListOf<BigInteger>()
+            for (i in 0 until outcomeSlotCount) {
+                val payoutNumeratorsFunctionSelector = EthereumUtils.getFunctionSelector("payoutNumerators(bytes32,uint256)")
+                val encodedIndex = EthereumUtils.encodeUint256(BigInteger.valueOf(i.toLong()))
+                val payoutNumeratorsData = payoutNumeratorsFunctionSelector + encodedConditionId + encodedIndex
+                
+                val payoutRequest = JsonRpcRequest(
+                    method = "eth_call",
+                    params = listOf(
+                        mapOf(
+                            "to" to conditionalTokensAddress,
+                            "data" to payoutNumeratorsData
+                        ),
+                        "latest"
+                    )
+                )
+                
+                val payoutResponse = rpcApi.call(payoutRequest)
+                if (!payoutResponse.isSuccessful || payoutResponse.body() == null) {
+                    logger.warn("查询 payoutNumerators 失败: index=$i")
+                    continue
+                }
+                
+                val payoutRpcResponse = payoutResponse.body()!!
+                if (payoutRpcResponse.error != null) {
+                    logger.warn("查询 payoutNumerators 错误: index=$i, error=${payoutRpcResponse.error.message}")
+                    continue
+                }
+                
+                val payoutHex = payoutRpcResponse.result?.asString ?: "0x0"
+                val payout = EthereumUtils.decodeUint256(payoutHex)
+                payouts.add(payout)
+            }
             
             Result.success(Pair(payoutDenominator, payouts))
         } catch (e: Exception) {

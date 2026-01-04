@@ -22,13 +22,13 @@ const CopyTradingOrdersModal: React.FC<CopyTradingOrdersModalProps> = ({
 }) => {
   const { t } = useTranslation()
   const [activeTab, setActiveTab] = useState<TabType>(defaultTab)
-  
+
   useEffect(() => {
     if (open) {
       setActiveTab(defaultTab)
     }
   }, [open, defaultTab])
-  
+
   return (
     <Modal
       title={t('copyTradingOrders.title') || '订单列表'}
@@ -38,25 +38,26 @@ const CopyTradingOrdersModal: React.FC<CopyTradingOrdersModalProps> = ({
       width="90%"
       style={{ top: 20 }}
       bodyStyle={{ padding: '24px', maxHeight: 'calc(100vh - 100px)', overflow: 'auto' }}
+      destroyOnClose
     >
-      <Tabs 
-        activeKey={activeTab} 
+      <Tabs
+        activeKey={activeTab}
         onChange={(key) => setActiveTab(key as TabType)}
         items={[
           {
             key: 'buy',
             label: t('copyTradingOrders.buyOrders') || '买入订单',
-            children: <BuyOrdersTab copyTradingId={copyTradingId} />
+            children: <BuyOrdersTab copyTradingId={copyTradingId} active={activeTab === 'buy'} />
           },
           {
             key: 'sell',
             label: t('copyTradingOrders.sellOrders') || '卖出订单',
-            children: <SellOrdersTab copyTradingId={copyTradingId} />
+            children: <SellOrdersTab copyTradingId={copyTradingId} active={activeTab === 'sell'} />
           },
           {
             key: 'matched',
             label: t('copyTradingOrders.matchedOrders') || '匹配关系',
-            children: <MatchedOrdersTab copyTradingId={copyTradingId} />
+            children: <MatchedOrdersTab copyTradingId={copyTradingId} active={activeTab === 'matched'} />
           }
         ]}
       />

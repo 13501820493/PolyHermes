@@ -686,6 +686,13 @@ class TelegramNotificationService(
             else -> side
         }
         
+        // 获取图标
+        val icon = when (side.uppercase()) {
+            "BUY" -> "🚀"
+            "SELL" -> "💰"
+            else -> "📣"
+        }
+        
         // 构建账户信息（格式：账户名(钱包地址)）
         val accountInfo = buildAccountInfo(accountName, walletAddress, unknownAccount)
 
@@ -761,7 +768,7 @@ class TelegramNotificationService(
         val priceDisplay = formatPrice(price)
         val sizeDisplay = formatQuantity(size)
 
-        return """✅ <b>$orderCreatedSuccess</b>
+        return """$icon <b>$orderCreatedSuccess</b>
 
 📊 <b>$orderInfo：</b>
 • $orderIdLabel: <code>${orderId ?: unknown}</code>
@@ -989,7 +996,7 @@ class TelegramNotificationService(
             "  • ${position.marketId.substring(0, 8)}... (${position.side}): $quantityDisplay shares = $valueDisplay USDC"
         }
         
-        return """✅ <b>$redeemSuccess</b>
+        return """💸 <b>$redeemSuccess</b>
 
 📊 <b>$redeemInfo：</b>
 • $accountLabel: $escapedAccountInfo

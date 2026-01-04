@@ -89,6 +89,8 @@ class OnChainWsService(
     private suspend fun handleLeaderTransaction(leaderId: Long, txHash: String, httpClient: OkHttpClient, rpcApi: EthereumRpcApi) {
         val leader = monitoredLeaders[leaderId] ?: return
         
+        logger.debug("开始处理 Leader 交易: leaderId=$leaderId, txHash=$txHash, leaderAddress=${leader.leaderAddress}")
+        
         try {
             // 获取交易 receipt
             val receiptRequest = JsonRpcRequest(
@@ -98,11 +100,13 @@ class OnChainWsService(
             
             val receiptResponse = rpcApi.call(receiptRequest)
             if (!receiptResponse.isSuccessful || receiptResponse.body() == null) {
+                logger.warn("获取交易 receipt 失败: leaderId=$leaderId, txHash=$txHash, code=${receiptResponse.code()}")
                 return
             }
             
             val receiptRpcResponse = receiptResponse.body()!!
             if (receiptRpcResponse.error != null || receiptRpcResponse.result == null) {
+                logger.warn("交易 receipt 错误: leaderId=$leaderId, txHash=$txHash, error=${receiptRpcResponse.error}")
                 return
             }
             
@@ -118,8 +122,12 @@ class OnChainWsService(
             }
             
             // 解析 receipt 中的 Transfer 日志
-            val logs = receiptJson.getAsJsonArray("logs") ?: return
+            val logs = receiptJson.getAsJsonArray("logs") ?: run {
+                logger.warn("交易 receipt 中没有日志: leaderId=$leaderId, txHash=$txHash")
+                return
+            }
             val (erc20Transfers, erc1155Transfers) = OnChainWsUtils.parseReceiptTransfers(logs)
+            logger.debug("解析交易日志: leaderId=$leaderId, txHash=$txHash, erc20Transfers=${erc20Transfers.size}, erc1155Transfers=${erc1155Transfers.size}")
             
             // 解析交易信息
             val trade = OnChainWsUtils.parseTradeFromTransfers(
@@ -132,12 +140,15 @@ class OnChainWsService(
             )
             
             if (trade != null) {
+                logger.info("成功解析交易: leaderId=$leaderId, txHash=$txHash, side=${trade.side}, market=${trade.market}, size=${trade.size}")
                 // 调用 processTrade 处理交易
                 copyOrderTrackingService.processTrade(
                     leaderId = leaderId,
                     trade = trade,
                     source = "onchain-ws"
                 )
+            } else {
+                logger.warn("无法解析交易（返回 null）: leaderId=$leaderId, txHash=$txHash, erc20Transfers=${erc20Transfers.size}, erc1155Transfers=${erc1155Transfers.size}")
             }
         } catch (e: Exception) {
             logger.error("处理 Leader 交易失败: leaderId=$leaderId, txHash=$txHash, ${e.message}", e)

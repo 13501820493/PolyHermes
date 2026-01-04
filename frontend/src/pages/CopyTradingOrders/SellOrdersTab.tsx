@@ -8,11 +8,14 @@ import type { SellOrderInfo, OrderTrackingRequest, OrderTrackingListResponse } f
 
 const { Option } = Select
 
+import { ReloadOutlined } from '@ant-design/icons'
+
 interface SellOrdersTabProps {
   copyTradingId: string
+  active?: boolean
 }
 
-const SellOrdersTab: React.FC<SellOrdersTabProps> = ({ copyTradingId }) => {
+const SellOrdersTab: React.FC<SellOrdersTabProps> = ({ copyTradingId, active = false }) => {
   const { t } = useTranslation()
   const isMobile = useMediaQuery({ maxWidth: 768 })
   const [loading, setLoading] = useState(false)
@@ -24,16 +27,16 @@ const SellOrdersTab: React.FC<SellOrdersTabProps> = ({ copyTradingId }) => {
     marketId?: string
     side?: string
   }>({})
-  
+
   useEffect(() => {
-    if (copyTradingId) {
+    if (copyTradingId && active) {
       fetchOrders()
     }
-  }, [copyTradingId, page, limit, filters])
-  
+  }, [copyTradingId, active, page, limit, filters])
+
   const fetchOrders = async () => {
     if (!copyTradingId) return
-    
+
     setLoading(true)
     try {
       const request: OrderTrackingRequest = {
@@ -43,7 +46,7 @@ const SellOrdersTab: React.FC<SellOrdersTabProps> = ({ copyTradingId }) => {
         limit,
         ...filters
       }
-      
+
       const response = await apiService.orderTracking.list(request)
       if (response.data.code === 0 && response.data.data) {
         const data = response.data.data as OrderTrackingListResponse
@@ -56,13 +59,13 @@ const SellOrdersTab: React.FC<SellOrdersTabProps> = ({ copyTradingId }) => {
       setLoading(false)
     }
   }
-  
+
   const getPnlColor = (value: string): string => {
     const num = parseFloat(value)
     if (isNaN(num)) return '#666'
     return num >= 0 ? '#3f8600' : '#cf1322'
   }
-  
+
   const columns = [
     {
       title: t('copyTradingOrders.orderId') || '订单ID',
@@ -71,7 +74,7 @@ const SellOrdersTab: React.FC<SellOrdersTabProps> = ({ copyTradingId }) => {
       width: isMobile ? 100 : 150,
       render: (text: string) => (
         <span style={{ fontFamily: 'monospace', fontSize: isMobile ? 11 : 12 }}>
-          {isMobile 
+          {isMobile
             ? `${text.slice(0, 6)}...${text.slice(-4)}`
             : `${text.slice(0, 8)}...${text.slice(-6)}`
           }
@@ -85,7 +88,7 @@ const SellOrdersTab: React.FC<SellOrdersTabProps> = ({ copyTradingId }) => {
       width: isMobile ? 100 : 150,
       render: (text: string) => (
         <span style={{ fontFamily: 'monospace', fontSize: isMobile ? 11 : 12 }}>
-          {isMobile 
+          {isMobile
             ? `${text.slice(0, 6)}...${text.slice(-4)}`
             : `${text.slice(0, 8)}...${text.slice(-6)}`
           }
@@ -99,7 +102,7 @@ const SellOrdersTab: React.FC<SellOrdersTabProps> = ({ copyTradingId }) => {
       width: isMobile ? 100 : 150,
       render: (text: string) => (
         <span style={{ fontFamily: 'monospace', fontSize: isMobile ? 11 : 12 }}>
-          {isMobile 
+          {isMobile
             ? `${text.slice(0, 6)}...${text.slice(-4)}`
             : `${text.slice(0, 8)}...${text.slice(-6)}`
           }
@@ -153,8 +156,8 @@ const SellOrdersTab: React.FC<SellOrdersTabProps> = ({ copyTradingId }) => {
       key: 'realizedPnl',
       width: isMobile ? 100 : 120,
       render: (value: string) => (
-        <span style={{ 
-          color: getPnlColor(value), 
+        <span style={{
+          color: getPnlColor(value),
           fontWeight: 500,
           fontSize: isMobile ? 12 : 14
         }}>
@@ -169,7 +172,7 @@ const SellOrdersTab: React.FC<SellOrdersTabProps> = ({ copyTradingId }) => {
       width: isMobile ? 120 : 160,
       render: (timestamp: number) => (
         <span style={{ fontSize: isMobile ? 11 : 12 }}>
-          {isMobile 
+          {isMobile
             ? new Date(timestamp).toLocaleDateString('zh-CN')
             : new Date(timestamp).toLocaleString('zh-CN')
           }
@@ -177,7 +180,7 @@ const SellOrdersTab: React.FC<SellOrdersTabProps> = ({ copyTradingId }) => {
       )
     }
   ]
-  
+
   return (
     <div>
       <div style={{ marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
@@ -188,7 +191,7 @@ const SellOrdersTab: React.FC<SellOrdersTabProps> = ({ copyTradingId }) => {
           value={filters.marketId}
           onChange={(e) => setFilters({ ...filters, marketId: e.target.value || undefined })}
         />
-        
+
         <Select
           placeholder={t('copyTradingOrders.filterSide') || '筛选方向'}
           allowClear
@@ -201,10 +204,10 @@ const SellOrdersTab: React.FC<SellOrdersTabProps> = ({ copyTradingId }) => {
           <Option value="YES">YES</Option>
           <Option value="NO">NO</Option>
         </Select>
-        
-        <Button onClick={fetchOrders}>{t('common.search') || '查询'}</Button>
+
+        <Button type="primary" onClick={fetchOrders} icon={<ReloadOutlined />}>{t('common.refresh') || '刷新'}</Button>
       </div>
-      
+
       {isMobile ? (
         <div>
           {loading ? (
@@ -228,7 +231,7 @@ const SellOrdersTab: React.FC<SellOrdersTabProps> = ({ copyTradingId }) => {
                 })
                 const amount = (parseFloat(order.quantity) * parseFloat(order.price)).toString()
                 const displaySide = order.side === '0' ? 'YES' : order.side === '1' ? 'NO' : order.side
-                
+
                 return (
                   <Card
                     key={order.orderId}
@@ -240,9 +243,9 @@ const SellOrdersTab: React.FC<SellOrdersTabProps> = ({ copyTradingId }) => {
                     bodyStyle={{ padding: '16px' }}
                   >
                     <div style={{ marginBottom: '12px' }}>
-                      <div style={{ 
-                        fontSize: '14px', 
-                        fontWeight: 'bold', 
+                      <div style={{
+                        fontSize: '14px',
+                        fontWeight: 'bold',
                         marginBottom: '8px',
                         fontFamily: 'monospace'
                       }}>
@@ -252,9 +255,9 @@ const SellOrdersTab: React.FC<SellOrdersTabProps> = ({ copyTradingId }) => {
                         <Tag>{displaySide}</Tag>
                       </div>
                     </div>
-                    
+
                     <Divider style={{ margin: '12px 0' }} />
-                    
+
                     <div style={{ marginBottom: '12px' }}>
                       <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>{t('copyTradingOrders.sellInfo') || '卖出信息'}</div>
                       <div style={{ fontSize: '14px', fontWeight: '500' }}>
@@ -264,32 +267,32 @@ const SellOrdersTab: React.FC<SellOrdersTabProps> = ({ copyTradingId }) => {
                         {t('copyTradingOrders.amount') || '金额'}: {formatUSDC(amount)} USDC
                       </div>
                     </div>
-                    
+
                     <div style={{ marginBottom: '12px' }}>
                       <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>{t('copyTradingOrders.realizedPnl') || '已实现盈亏'}</div>
-                      <div style={{ 
-                        fontSize: '16px', 
+                      <div style={{
+                        fontSize: '16px',
                         fontWeight: 'bold',
                         color: getPnlColor(order.realizedPnl)
                       }}>
                         {formatUSDC(order.realizedPnl)} USDC
                       </div>
                     </div>
-                    
+
                     <div style={{ marginBottom: '12px' }}>
                       <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>{t('copyTradingOrders.leaderTradeId') || 'Leader 交易ID'}</div>
                       <div style={{ fontSize: '12px', color: '#999', fontFamily: 'monospace' }}>
                         {order.leaderTradeId.slice(0, 8)}...{order.leaderTradeId.slice(-6)}
                       </div>
                     </div>
-                    
+
                     <div style={{ marginBottom: '16px' }}>
                       <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>{t('copyTradingOrders.marketId') || '市场ID'}</div>
                       <div style={{ fontSize: '12px', color: '#999', fontFamily: 'monospace' }}>
                         {order.marketId.slice(0, 8)}...{order.marketId.slice(-6)}
                       </div>
                     </div>
-                    
+
                     <div style={{ marginBottom: '16px' }}>
                       <div style={{ fontSize: '12px', color: '#999' }}>
                         {t('copyTradingOrders.createdAt') || '创建时间'}: {formattedDate}

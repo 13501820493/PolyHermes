@@ -207,6 +207,7 @@ object OnChainWsUtils {
             usdcRaw = usdcIn
         } else {
             // 无法判断交易方向
+            logger.debug("无法判断交易方向: txHash=$txHash, bestInId=$bestInId, bestInVal=$bestInVal, bestOutId=$bestOutId, bestOutVal=$bestOutVal, usdcOut=$usdcOut, usdcIn=$usdcIn")
             return null
         }
         

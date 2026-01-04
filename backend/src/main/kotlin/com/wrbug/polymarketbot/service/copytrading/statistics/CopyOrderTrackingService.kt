@@ -253,7 +253,7 @@ open class CopyOrderTrackingService(
                     // 先计算跟单金额（用于仓位检查）
                     // 注意：这里先计算金额，即使后续被过滤也会记录
                     val tradePrice = trade.price.toSafeBigDecimal()
-                    val buyQuantity = try {
+                    var buyQuantity = try {
                         calculateBuyQuantity(trade, copyTrading)
                     } catch (e: Exception) {
                         logger.warn("计算买入数量失败: ${e.message}", e)
@@ -369,10 +369,14 @@ open class CopyOrderTrackingService(
                     // 买入数量已在过滤检查前计算，这里直接使用
                     // 如果数量为0或负数，跳过
                     if (buyQuantity.lte(BigDecimal.ZERO)) {
-                        logger.warn("计算出的买入数量为0或负数，跳过: copyTradingId=${copyTrading.id}, tradeId=${trade.id}")
+                        logger.warn("计算得到的买入数量为0，跳过跟单: copyTradingId=${copyTrading.id}, tradeId=${trade.id}")
                         continue
                     }
 
+                    if (buyQuantity.lt(BigDecimal.ONE)) {
+                        logger.warn("计算得到的买入数量小于1，自动调整为1 (Polymarket 最小下单数量): copyTradingId=${copyTrading.id}, tradeId=${trade.id}, originalQuantity=$buyQuantity")
+                        buyQuantity = BigDecimal.ONE
+                    }
                     // 验证订单数量限制（仅比例模式）
                     var finalBuyQuantity = buyQuantity
                     if (copyTrading.copyMode == "RATIO") {
@@ -656,8 +660,8 @@ open class CopyOrderTrackingService(
     private fun calculateBuyQuantity(trade: TradeResponse, copyTrading: CopyTrading): BigDecimal {
         return when (copyTrading.copyMode) {
             "RATIO" -> {
-                // 比例模式：Leader 数量 × 比例
-                trade.size.toSafeBigDecimal().multi(copyTrading.copyRatio)
+                // 比例模式：Leader 数量 × (比例 / 100)
+                trade.size.toSafeBigDecimal().multi(copyTrading.copyRatio.div(100))
             }
 
             "FIXED" -> {
@@ -689,7 +693,7 @@ open class CopyOrderTrackingService(
         val leader = leaderRepository.findById(copyTrading.leaderId).orElse(null)
             ?: run {
                 logger.warn("Leader 不存在，使用默认比例: leaderId=${copyTrading.leaderId}")
-                return leaderSellQuantity.multi(copyTrading.copyRatio)
+                return leaderSellQuantity.multi(copyTrading.copyRatio.div(100))
             }
 
         // 创建不需要认证的 CLOB API 客户端（用于查询公开的交易数据）
@@ -760,7 +764,7 @@ open class CopyOrderTrackingService(
         // 如果无法计算总比例（查询失败），使用默认比例
         if (totalLeaderQuantity.lte(BigDecimal.ZERO)) {
             logger.warn("无法计算总比例（Leader 买入数量为 0），使用默认比例: copyTradingId=${copyTrading.id}")
-            return leaderSellQuantity.multi(copyTrading.copyRatio)
+            return leaderSellQuantity.multi(copyTrading.copyRatio.div(100))
         }
 
         // 计算实际比例：跟单买入数量 / Leader 买入数量
@@ -835,13 +839,21 @@ open class CopyOrderTrackingService(
                 )
             }
             "RATIO" -> {
-                // 比例模式：直接使用配置的 copyRatio
-                leaderSellTrade.size.toSafeBigDecimal().multi(copyTrading.copyRatio)
+                // 比例模式：直接使用配置的 copyRatio (需要除以100)
+                leaderSellTrade.size.toSafeBigDecimal().multi(copyTrading.copyRatio.div(100))
             }
             else -> {
                 logger.warn("不支持的 copyMode: ${copyTrading.copyMode}，使用默认比例模式")
-                leaderSellTrade.size.toSafeBigDecimal().multi(copyTrading.copyRatio)
+                leaderSellTrade.size.toSafeBigDecimal().multi(copyTrading.copyRatio.div(100))
             }
+        }
+
+        // 如果需要卖出的数量小于1（但大于0），自动调整为1（Polymarket 最小下单数量）
+        // 注意：如果实际持有数量不足1，后续的 totalMatched 检查会拦截
+        var finalNeedMatch = needMatch
+        if (finalNeedMatch.gt(BigDecimal.ZERO) && finalNeedMatch.lt(BigDecimal.ONE)) {
+            logger.warn("计算得到的卖出数量小于1，自动调整为1: copyTradingId=${copyTrading.id}, original=$needMatch")
+            finalNeedMatch = BigDecimal.ONE
         }
 
         // 4. 获取tokenId（直接使用outcomeIndex，支持多元市场）
@@ -867,7 +879,7 @@ open class CopyOrderTrackingService(
         // 6. 按FIFO顺序匹配，计算实际可以卖出的数量
         // 使用计算出的实际卖出价格（而不是 Leader 价格）来创建匹配明细
         var totalMatched = BigDecimal.ZERO
-        var remaining = needMatch
+        var remaining = finalNeedMatch
         val matchDetails = mutableListOf<SellMatchDetail>()
 
         for (order in unmatchedOrders) {
@@ -901,6 +913,11 @@ open class CopyOrderTrackingService(
         }
 
         if (totalMatched.lte(BigDecimal.ZERO)) {
+            return
+        }
+
+        if (totalMatched.lt(BigDecimal.ONE)) {
+            logger.warn("卖出数量小于1，跳过卖出 (Polymarket 最小下单数量为 1): copyTradingId=${copyTrading.id}, tradeId=${leaderSellTrade.id}, quantity=$totalMatched")
             return
         }
 

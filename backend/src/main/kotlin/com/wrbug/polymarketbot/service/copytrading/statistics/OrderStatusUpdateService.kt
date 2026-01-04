@@ -143,14 +143,16 @@ class OrderStatusUpdateService(
             // 计算30秒前的时间戳
             val thirtySecondsAgo = System.currentTimeMillis() - 30000
             
-            // 查询30秒前创建的订单
-            val ordersToCheck = copyOrderTrackingRepository.findByCreatedAtBefore(thirtySecondsAgo)
+            // 查询30秒前创建的订单,并过滤掉已经完全匹配的订单
+            // 已经完全匹配的订单(status = "fully_matched")不需要再检查
+            val allOrdersToCheck = copyOrderTrackingRepository.findByCreatedAtBefore(thirtySecondsAgo)
+            val ordersToCheck = allOrdersToCheck.filter { it.status != "fully_matched" }
             
             if (ordersToCheck.isEmpty()) {
                 return
             }
             
-            logger.debug("检查 ${ordersToCheck.size} 个30秒前创建的订单是否成交")
+            logger.debug("检查 ${ordersToCheck.size} 个30秒前创建的订单是否成交 (已过滤 ${allOrdersToCheck.size - ordersToCheck.size} 个已完全匹配的订单)")
             
             // 按账户分组，避免重复创建 API 客户端
             val ordersByAccount = ordersToCheck.groupBy { it.accountId }

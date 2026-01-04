@@ -31,7 +31,8 @@ class MarketPriceService(
      * 获取当前市场最新价
      * 优先级：
      * 1. 链上查询市场结算结果（如果已结算，返回 1.0 或 0.0）
-     * 2. CLOB API 查询订单簿价格（最准确，使用 bestBid）
+     * 2. CLOB API 查询订单簿价格（最准确，优先使用，使用 bestBid）
+     * 3. Gamma Market API 查询市场价格（快速，作为备选）
      * 
      * 价格会被截位到 4 位小数（向下截断，不四舍五入），用于显示和后续计算
      * 
@@ -48,15 +49,22 @@ class MarketPriceService(
             return chainPrice.setScale(4, java.math.RoundingMode.DOWN)
         }
         
-        // 2. 从 CLOB API 查询订单簿价格（最准确）
+        // 2. 从 CLOB API 查询订单簿价格（最准确，优先使用）
         val orderbookPrice = getPriceFromClobOrderbook(marketId, outcomeIndex)
         if (orderbookPrice != null) {
             // 截位到 4 位小数（向下截断，不四舍五入）
             return orderbookPrice.setScale(4, java.math.RoundingMode.DOWN)
         }
         
+        // 3. 从 Gamma Market API 查询市场价格（作为备选）
+        val marketPrice = getPriceFromGammaMarket(marketId, outcomeIndex)
+        if (marketPrice != null) {
+            // 截位到 4 位小数（向下截断，不四舍五入）
+            return marketPrice.setScale(4, java.math.RoundingMode.DOWN)
+        }
+        
         // 如果所有数据源都失败，抛出异常
-        val errorMsg = "无法获取市场价格: marketId=$marketId, outcomeIndex=$outcomeIndex (链上查询和订单簿查询均失败)"
+        val errorMsg = "无法获取市场价格: marketId=$marketId, outcomeIndex=$outcomeIndex (链上查询、订单簿查询和 Market API 均失败)"
         logger.error(errorMsg)
         throw IllegalStateException(errorMsg)
     }
@@ -102,6 +110,61 @@ class MarketPriceService(
             )
         } catch (e: Exception) {
             logger.debug("链上查询市场条件异常: marketId=$marketId, outcomeIndex=$outcomeIndex, error=${e.message}")
+            null
+        }
+    }
+    
+    /**
+     * 从 Gamma Market API 获取价格
+     * 使用 outcomePrices 字段，格式通常为 JSON 字符串 "[\"0.5\", \"0.5\"]"
+     * 如果查询失败或 outcomePrices 为空，返回 null
+     */
+    private suspend fun getPriceFromGammaMarket(marketId: String, outcomeIndex: Int): BigDecimal? {
+        return try {
+            val gammaApi = retrofitFactory.createGammaApi()
+            val marketResponse = gammaApi.listMarkets(conditionIds = listOf(marketId))
+            
+            if (!marketResponse.isSuccessful || marketResponse.body() == null) {
+                logger.debug("Gamma Market API 查询失败: marketId=$marketId, code=${marketResponse.code()}")
+                return null
+            }
+            
+            val markets = marketResponse.body()!!
+            if (markets.isEmpty()) {
+                logger.debug("Gamma Market API 未找到市场: marketId=$marketId")
+                return null
+            }
+            
+            val market = markets.first()
+            
+            // 尝试从 outcomePrices 字段获取价格
+            val outcomePricesStr = market.outcomePrices
+            if (outcomePricesStr.isNullOrBlank()) {
+                logger.debug("Market outcomePrices 为空: marketId=$marketId")
+                return null
+            }
+            
+            // 解析 outcomePrices（通常是 JSON 数组字符串）
+            val outcomePrices = try {
+                // 移除首尾的方括号和引号，按逗号分割
+                val cleanStr = outcomePricesStr.trim().removeSurrounding("[", "]")
+                cleanStr.split(",").map { 
+                    it.trim().removeSurrounding("\"").toSafeBigDecimal() 
+                }
+            } catch (e: Exception) {
+                logger.warn("解析 outcomePrices 失败: marketId=$marketId, outcomePrices=$outcomePricesStr, error=${e.message}")
+                null
+            }
+            
+            if (outcomePrices != null && outcomeIndex < outcomePrices.size) {
+                val price = outcomePrices[outcomeIndex]
+                logger.debug("从 Gamma Market API 获取价格: marketId=$marketId, outcomeIndex=$outcomeIndex, price=$price")
+                return price
+            }
+            
+            null
+        } catch (e: Exception) {
+            logger.debug("Gamma Market API 查询异常: marketId=$marketId, outcomeIndex=$outcomeIndex, error=${e.message}")
             null
         }
     }
