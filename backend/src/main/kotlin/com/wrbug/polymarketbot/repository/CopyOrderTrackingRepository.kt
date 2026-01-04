@@ -61,5 +61,10 @@ interface CopyOrderTrackingRepository : JpaRepository<CopyOrderTracking, Long> {
      */
     @Query("SELECT t FROM CopyOrderTracking t WHERE t.createdAt <= :beforeTime")
     fun findByCreatedAtBefore(beforeTime: Long): List<CopyOrderTracking>
+
+    /**
+     * 查询指定时间之前创建且状态不为指定状态的订单
+     */
+    fun findByCreatedAtBeforeAndStatusNot(beforeTime: Long, status: String): List<CopyOrderTracking>
 }
 
