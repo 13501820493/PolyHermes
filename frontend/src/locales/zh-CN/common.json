@@ -1026,7 +1026,7 @@
     "remainingQuantity": "剩余",
     "sellStatus": "卖出状态",
     "status": "状态",
-    "statusFilled": "已完成",
+    "statusFilled": "未成交",
     "statusPartiallySold": "部分成交",
     "statusFullySold": "全部成交",
     "realizedPnl": "已实现盈亏",

@@ -59,6 +59,25 @@ class TelegramNotificationService(
      * @param walletAddressForApi 钱包地址（可选，用于查询订单详情）
      * @param locale 语言设置（可选，如果提供则使用，否则使用 LocaleContextHolder 获取）
      */
+    // 已发送通知的订单ID缓存（key: orderId, value: timestamp）
+    private val sentOrderIds = java.util.concurrent.ConcurrentHashMap<String, Long>()
+
+    /**
+     * 发送订单成功通知
+     * @param orderId 订单ID（用于查询订单详情获取实际价格和数量）
+     * @param marketTitle 市场标题
+     * @param marketId 市场ID（conditionId），用于生成链接
+     * @param marketSlug 市场slug，用于生成链接
+     * @param side 订单方向（BUY/SELL），用于多语言显示
+     * @param accountName 账户名称
+     * @param walletAddress 钱包地址
+     * @param clobApi CLOB API 客户端（可选，如果提供则查询订单详情获取实际价格和数量）
+     * @param apiKey API Key（可选，用于查询订单详情）
+     * @param apiSecret API Secret（可选，用于查询订单详情）
+     * @param apiPassphrase API Passphrase（可选，用于查询订单详情）
+     * @param walletAddressForApi 钱包地址（可选，用于查询订单详情）
+     * @param locale 语言设置（可选，如果提供则使用，否则使用 LocaleContextHolder 获取）
+     */
     suspend fun sendOrderSuccessNotification(
         orderId: String?,
         marketTitle: String,
@@ -79,6 +98,26 @@ class TelegramNotificationService(
         leaderName: String? = null,  // Leader 名称（备注）
         configName: String? = null  // 跟单配置名
     ) {
+        // 1. 如果提供了 orderId，检查是否已发送过通知（去重）
+        if (orderId != null) {
+            val lastSentTime = sentOrderIds[orderId]
+            if (lastSentTime != null) {
+                // 如果5分钟内已发送过，跳过
+                if (System.currentTimeMillis() - lastSentTime < 5 * 60 * 1000) {
+                    logger.info("订单通知已发送过（5分钟内），跳过: orderId=$orderId")
+                    return
+                }
+            }
+            // 记录发送时间
+            sentOrderIds[orderId] = System.currentTimeMillis()
+            
+            // 简单的清理逻辑：如果缓存过大，清理过期的
+            if (sentOrderIds.size > 1000) {
+                val expiryTime = System.currentTimeMillis() - 5 * 60 * 1000
+                sentOrderIds.entries.removeIf { it.value < expiryTime }
+            }
+        }
+
         // 获取语言设置（优先使用传入的 locale，否则从 LocaleContextHolder 获取）
         val currentLocale = locale ?: try {
             LocaleContextHolder.getLocale()
@@ -686,6 +725,13 @@ class TelegramNotificationService(
             else -> side
         }
         
+        // 获取图标
+        val icon = when (side.uppercase()) {
+            "BUY" -> "🚀"
+            "SELL" -> "💰"
+            else -> "📣"
+        }
+        
         // 构建账户信息（格式：账户名(钱包地址)）
         val accountInfo = buildAccountInfo(accountName, walletAddress, unknownAccount)
 
@@ -761,7 +807,7 @@ class TelegramNotificationService(
         val priceDisplay = formatPrice(price)
         val sizeDisplay = formatQuantity(size)
 
-        return """✅ <b>$orderCreatedSuccess</b>
+        return """$icon <b>$orderCreatedSuccess</b>
 
 📊 <b>$orderInfo：</b>
 • $orderIdLabel: <code>${orderId ?: unknown}</code>
@@ -989,7 +1035,7 @@ class TelegramNotificationService(
             "  • ${position.marketId.substring(0, 8)}... (${position.side}): $quantityDisplay shares = $valueDisplay USDC"
         }
         
-        return """✅ <b>$redeemSuccess</b>
+        return """💸 <b>$redeemSuccess</b>
 
 📊 <b>$redeemInfo：</b>
 • $accountLabel: $escapedAccountInfo

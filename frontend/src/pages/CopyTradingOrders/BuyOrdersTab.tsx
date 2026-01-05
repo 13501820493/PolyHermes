@@ -8,11 +8,14 @@ import type { BuyOrderInfo, OrderTrackingRequest, OrderTrackingListResponse } fr
 
 const { Option } = Select
 
+import { ReloadOutlined } from '@ant-design/icons'
+
 interface BuyOrdersTabProps {
   copyTradingId: string
+  active?: boolean
 }
 
-const BuyOrdersTab: React.FC<BuyOrdersTabProps> = ({ copyTradingId }) => {
+const BuyOrdersTab: React.FC<BuyOrdersTabProps> = ({ copyTradingId, active = false }) => {
   const { t } = useTranslation()
   const isMobile = useMediaQuery({ maxWidth: 768 })
   const [loading, setLoading] = useState(false)
@@ -25,16 +28,16 @@ const BuyOrdersTab: React.FC<BuyOrdersTabProps> = ({ copyTradingId }) => {
     side?: string
     status?: string
   }>({})
-  
+
   useEffect(() => {
-    if (copyTradingId) {
+    if (copyTradingId && active) {
       fetchOrders()
     }
-  }, [copyTradingId, page, limit, filters])
-  
+  }, [copyTradingId, active, page, limit, filters])
+
   const fetchOrders = async () => {
     if (!copyTradingId) return
-    
+
     setLoading(true)
     try {
       const request: OrderTrackingRequest = {
@@ -44,7 +47,7 @@ const BuyOrdersTab: React.FC<BuyOrdersTabProps> = ({ copyTradingId }) => {
         limit,
         ...filters
       }
-      
+
       const response = await apiService.orderTracking.list(request)
       if (response.data.code === 0 && response.data.data) {
         const data = response.data.data as OrderTrackingListResponse
@@ -57,17 +60,17 @@ const BuyOrdersTab: React.FC<BuyOrdersTabProps> = ({ copyTradingId }) => {
       setLoading(false)
     }
   }
-  
+
   const getStatusTag = (status: string) => {
     const statusMap: Record<string, { color: string; text: string }> = {
-      filled: { color: 'processing', text: t('copyTradingOrders.statusFilled') || '已完成' },
+      filled: { color: 'processing', text: t('copyTradingOrders.statusFilled') || '未成交' },
       partially_matched: { color: 'warning', text: t('copyTradingOrders.statusPartiallySold') || '部分成交' },
       fully_matched: { color: 'success', text: t('copyTradingOrders.statusFullySold') || '全部成交' }
     }
     const config = statusMap[status] || { color: 'default', text: status }
     return <Tag color={config.color}>{config.text}</Tag>
   }
-  
+
   const columns = [
     {
       title: t('copyTradingOrders.orderId') || '订单ID',
@@ -76,7 +79,7 @@ const BuyOrdersTab: React.FC<BuyOrdersTabProps> = ({ copyTradingId }) => {
       width: isMobile ? 100 : 150,
       render: (text: string) => (
         <span style={{ fontFamily: 'monospace', fontSize: isMobile ? 11 : 12 }}>
-          {isMobile 
+          {isMobile
             ? `${text.slice(0, 6)}...${text.slice(-4)}`
             : `${text.slice(0, 8)}...${text.slice(-6)}`
           }
@@ -90,7 +93,7 @@ const BuyOrdersTab: React.FC<BuyOrdersTabProps> = ({ copyTradingId }) => {
       width: isMobile ? 100 : 150,
       render: (text: string) => (
         <span style={{ fontFamily: 'monospace', fontSize: isMobile ? 11 : 12 }}>
-          {isMobile 
+          {isMobile
             ? `${text.slice(0, 6)}...${text.slice(-4)}`
             : `${text.slice(0, 8)}...${text.slice(-6)}`
           }
@@ -104,7 +107,7 @@ const BuyOrdersTab: React.FC<BuyOrdersTabProps> = ({ copyTradingId }) => {
       width: isMobile ? 100 : 150,
       render: (text: string) => (
         <span style={{ fontFamily: 'monospace', fontSize: isMobile ? 11 : 12 }}>
-          {isMobile 
+          {isMobile
             ? `${text.slice(0, 6)}...${text.slice(-4)}`
             : `${text.slice(0, 8)}...${text.slice(-6)}`
           }
@@ -184,7 +187,7 @@ const BuyOrdersTab: React.FC<BuyOrdersTabProps> = ({ copyTradingId }) => {
       width: isMobile ? 120 : 160,
       render: (timestamp: number) => (
         <span style={{ fontSize: isMobile ? 11 : 12 }}>
-          {isMobile 
+          {isMobile
             ? new Date(timestamp).toLocaleDateString('zh-CN')
             : new Date(timestamp).toLocaleString('zh-CN')
           }
@@ -192,7 +195,7 @@ const BuyOrdersTab: React.FC<BuyOrdersTabProps> = ({ copyTradingId }) => {
       )
     }
   ]
-  
+
   return (
     <div>
       <div style={{ marginBottom: 16, display: 'flex', gap: 16, flexWrap: 'wrap' }}>
@@ -203,7 +206,7 @@ const BuyOrdersTab: React.FC<BuyOrdersTabProps> = ({ copyTradingId }) => {
           value={filters.marketId}
           onChange={(e) => setFilters({ ...filters, marketId: e.target.value || undefined })}
         />
-        
+
         <Select
           placeholder={t('copyTradingOrders.filterSide') || '筛选方向'}
           allowClear
@@ -213,10 +216,8 @@ const BuyOrdersTab: React.FC<BuyOrdersTabProps> = ({ copyTradingId }) => {
         >
           <Option value="0">YES</Option>
           <Option value="1">NO</Option>
-          <Option value="YES">YES</Option>
-          <Option value="NO">NO</Option>
         </Select>
-        
+
         <Select
           placeholder={t('copyTradingOrders.filterStatus') || '筛选状态'}
           allowClear
@@ -224,14 +225,14 @@ const BuyOrdersTab: React.FC<BuyOrdersTabProps> = ({ copyTradingId }) => {
           value={filters.status}
           onChange={(value) => setFilters({ ...filters, status: value || undefined })}
         >
-          <Option value="filled">{t('copyTradingOrders.statusFilled') || '已完成'}</Option>
+          <Option value="filled">{t('copyTradingOrders.statusFilled') || '未成交'}</Option>
           <Option value="partially_matched">{t('copyTradingOrders.statusPartiallySold') || '部分成交'}</Option>
           <Option value="fully_matched">{t('copyTradingOrders.statusFullySold') || '全部成交'}</Option>
         </Select>
-        
-        <Button onClick={fetchOrders}>{t('common.search') || '查询'}</Button>
+
+        <Button type="primary" onClick={fetchOrders} icon={<ReloadOutlined />}>{t('common.refresh') || '刷新'}</Button>
       </div>
-      
+
       {isMobile ? (
         <div>
           {loading ? (
@@ -255,7 +256,7 @@ const BuyOrdersTab: React.FC<BuyOrdersTabProps> = ({ copyTradingId }) => {
                 })
                 const amount = (parseFloat(order.quantity) * parseFloat(order.price)).toString()
                 const displaySide = order.side === '0' ? 'YES' : order.side === '1' ? 'NO' : order.side
-                
+
                 return (
                   <Card
                     key={order.orderId}
@@ -267,9 +268,9 @@ const BuyOrdersTab: React.FC<BuyOrdersTabProps> = ({ copyTradingId }) => {
                     bodyStyle={{ padding: '16px' }}
                   >
                     <div style={{ marginBottom: '12px' }}>
-                      <div style={{ 
-                        fontSize: '14px', 
-                        fontWeight: 'bold', 
+                      <div style={{
+                        fontSize: '14px',
+                        fontWeight: 'bold',
                         marginBottom: '8px',
                         fontFamily: 'monospace'
                       }}>
@@ -280,9 +281,9 @@ const BuyOrdersTab: React.FC<BuyOrdersTabProps> = ({ copyTradingId }) => {
                         {getStatusTag(order.status)}
                       </div>
                     </div>
-                    
+
                     <Divider style={{ margin: '12px 0' }} />
-                    
+
                     <div style={{ marginBottom: '12px' }}>
                       <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>{t('copyTradingOrders.buyInfo') || '买入信息'}</div>
                       <div style={{ fontSize: '14px', fontWeight: '500' }}>
@@ -292,28 +293,28 @@ const BuyOrdersTab: React.FC<BuyOrdersTabProps> = ({ copyTradingId }) => {
                         {t('copyTradingOrders.amount') || '金额'}: {formatUSDC(amount)} USDC
                       </div>
                     </div>
-                    
+
                     <div style={{ marginBottom: '12px' }}>
                       <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>{t('copyTradingOrders.matchInfo') || '匹配信息'}</div>
                       <div style={{ fontSize: '13px', color: '#333' }}>
                         {t('copyTradingOrders.matched') || '已匹配'}: {formatUSDC(order.matchedQuantity)} | {t('copyTradingOrders.remaining') || '剩余'}: {formatUSDC(order.remainingQuantity)}
                       </div>
                     </div>
-                    
+
                     <div style={{ marginBottom: '12px' }}>
                       <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>{t('copyTradingOrders.leaderTradeId') || 'Leader 交易ID'}</div>
                       <div style={{ fontSize: '12px', color: '#999', fontFamily: 'monospace' }}>
                         {order.leaderTradeId.slice(0, 8)}...{order.leaderTradeId.slice(-6)}
                       </div>
                     </div>
-                    
+
                     <div style={{ marginBottom: '16px' }}>
                       <div style={{ fontSize: '12px', color: '#666', marginBottom: '4px' }}>{t('copyTradingOrders.marketId') || '市场ID'}</div>
                       <div style={{ fontSize: '12px', color: '#999', fontFamily: 'monospace' }}>
                         {order.marketId.slice(0, 8)}...{order.marketId.slice(-6)}
                       </div>
                     </div>
-                    
+
                     <div style={{ marginBottom: '16px' }}>
                       <div style={{ fontSize: '12px', color: '#999' }}>
                         {t('copyTradingOrders.createdAt') || '创建时间'}: {formattedDate}
